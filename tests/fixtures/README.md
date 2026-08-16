@@ -1,62 +1,81 @@
-# Selected v20 conversion fixtures
+# Selected v20 conversion fixtures — v2
 
-These are **starter conformance/regression fixtures** for the public
+These are starter **conformance and regression fixtures** for the public
 Ovid MEDLINE → PubMed converter.
 
 ## Authority
 
-Expected outputs represent the approved **normative v20 rule specification**,
-not merely whatever the current monolithic Python file happens to produce.
+Expected outputs represent the approved normative v20 rule specification,
+rather than merely reproducing the current monolithic Python implementation.
 
-For Codex/refactoring work:
+Authority order for development:
 
-1. the v20 Markdown specification is normative;
-2. `expected_pubmed.txt` is the exact expected semantic output for each fixture;
-3. `fixture.json` contains required audit substrings and known current-reference status;
-4. paste mode and RTF-upload mode must converge on the same conversion core.
+1. normative v20 specification;
+2. approved fixture expectations;
+3. current Python reference implementation.
 
-## Fixture files
+## Fixture list
 
-Each numbered folder normally contains:
+| Fixture | Current v20-v2 reference result |
+|---|---|
+| 01 basic MeSH | PASS |
+| 02 Boolean references | PASS |
+| 03 adj3 | PASS |
+| 04 question wildcard | PASS |
+| 05 hash wildcard | PASS |
+| 06 truncation | PASS |
+| 07 short root | PASS |
+| 08 RCT filter | PASS |
+| 09 animal filter | PASS |
+| 10 RTF code-page cp1252 | **KNOWN FAIL** |
+| 11 split list numbering | PASS |
+| 12 year-leading continuation | **KNOWN FAIL** |
+| 13 historical MeSH | PASS |
+| 14 pharmacological action | PASS |
+| 15 end date | PASS |
+| 16 complex real Cochrane strategy | PASS |
 
-- `input_strategy.txt` — direct paste-mode strategy;
-- `input.rtf` — RTF upload-mode strategy;
-- `input_options.json` — optional external metadata such as `end_date`;
-- `expected_pubmed.txt` — expected converted strategy;
+Thus the intended current baseline is **14/16 passing normative fixtures**,
+with two isolated known conformance gaps.
+
+## Files in each fixture
+
+A fixture normally contains:
+
+- `input_strategy.txt` — direct paste-mode input;
+- `input.rtf` — equivalent or deliberately structured RTF-upload input;
+- `input_options.json` — optional metadata such as `end_date`;
+- `expected_pubmed.txt` — normative expected output;
 - `fixture.json` — machine-readable assertions;
-- `mesh_records.json` — only where deterministic MeSH metadata are needed.
+- `mesh_records.json` — deterministic fixture-only MeSH stub where required.
 
-The `mesh_records.json` files contain **fixture-only stubs**. Synthetic
-descriptor IDs/URIs are intentional. Production tests should separately test
-the real cache/API integration.
+Fixture-only MeSH records use synthetic IDs/URIs intentionally. Production
+MeSH cache/API integration must be tested separately.
 
-## Known-fail fixtures
+## Important rule for Codex
 
-Two fixtures intentionally encode normative requirements that the current
-v20-v2 maintenance implementation is still known not to satisfy fully:
+Do not modify a normative expected result merely to make the old implementation
+pass.
 
-- `10_unicode_rtf`: raw Windows-1252 RTF code-page decoding;
-- `11_split_list_numbering`: split Word-list labels plus a year-leading
-  physical continuation that must not become a spurious row.
+For fixtures 10 and 12, the implementation should be corrected.
 
-Codex should not weaken those fixtures to make the old implementation pass.
-The implementation should be corrected to satisfy the normative specification.
+## Additional tests still recommended
 
-## Important limitation
-
-These 15 fixtures are selected coverage, not a complete test suite. In
-particular, further dedicated fixtures should later be added for:
+Add dedicated tests later for:
 
 - generic `.pt.` audit warning;
-- protected-hyphen preservation when a verified canonical MeSH rename occurs;
-- comments/corrections `.cm.`;
-- unresolved MeSH safe fallback;
-- invalid/cyclic line references;
-- unused-line versus active-query validation;
-- wildcard expansion-limit/manual-review behaviour.
+- protected-hyphen preservation after verified canonical MeSH renaming;
+- Comments/Corrections `.cm.`;
+- unresolved MeSH fallback;
+- cache-only behaviour;
+- invalid/undefined/cyclic references;
+- active final-query dependency validation;
+- wildcard-expansion limit/manual review;
+- malformed RTF;
+- unused invalid rows versus active invalid rows.
 
 ## Real Cochrane fixture
 
-`15_complex_real_cochrane` uses the preserved 20-line Ovid MEDLINE strategy
-from Cochrane review **CD003594**. Its RTF container is reconstructed as a
-minimal deterministic test file.
+`16_complex_real_cochrane` preserves the 20-line Ovid MEDLINE strategy used for
+CD003594. Its RTF container is reconstructed as a minimal deterministic test
+wrapper rather than asserted to be byte-identical to the original source file.

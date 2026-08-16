@@ -1,0 +1,14 @@
+{
+  "antineoplastic agents": {
+    "status": "resolved",
+    "source_label": "Antineoplastic Agents",
+    "matched_label": "Antineoplastic Agents",
+    "match_type": "preferred",
+    "canonical_label": "Antineoplastic Agents",
+    "descriptor_id": "FIXTURE_ANTINEOPLASTIC_AGENTS",
+    "descriptor_uri": "fixture://mesh/Antineoplastic_Agents",
+    "record_class": "TopicalDescriptor",
+    "is_pharmacological_action": true,
+    "mesh_year": 2026
+  }
+}

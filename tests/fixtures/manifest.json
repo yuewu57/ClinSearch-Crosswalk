@@ -209,8 +209,8 @@
     "reference_v20_v2_status": "PASS"
   },
   {
-    "id": "10_unicode_rtf",
-    "purpose": "Normative RTF code-page handling: decode raw Windows-1252 correctly, then normalise Unicode punctuation.",
+    "id": "10_rtf_codepage_cp1252",
+    "purpose": "Normative RTF ANSI code-page handling: decode raw Windows-1252 bytes declared by \\ansicpg1252, then normalise Unicode punctuation.",
     "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
     "input_modes": [
       "paste",
@@ -226,11 +226,11 @@
     "forbidden_audit_substrings": [],
     "forbidden_output_substrings": [],
     "reference_v20_v2_status": "KNOWN_FAIL",
-    "reference_v20_v2_note": "The corrected v20-v2 maintenance file still inherits the documented UTF-8-strict RTF reader and is expected to fail on this raw cp1252 byte. Codex should make this fixture pass when implementing normative Section 3.1."
+    "reference_v20_v2_note": "The current v20-v2 maintenance implementation reads RTF with strict UTF-8 and is expected to fail on the raw Windows-1252 byte in this fixture. The implementation must be corrected; do not weaken the fixture."
   },
   {
     "id": "11_split_list_numbering",
-    "purpose": "Preserve Word list numbering when labels and expressions are split; protect a year-leading continuation from becoming a spurious row.",
+    "purpose": "Preserve Word list numbering when a list label is on one physical line and the corresponding Ovid expression is on the next.",
     "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
     "input_modes": [
       "paste",
@@ -245,13 +245,34 @@
     "required_audit_substrings": [],
     "forbidden_audit_substrings": [],
     "forbidden_output_substrings": [],
-    "reference_v20_v2_status": "KNOWN_FAIL",
-    "reference_v20_v2_note": "Split list labels themselves are supported, but the normative v20 year-leading continuation protection is documented as absent in the current executable. The physical continuation beginning '2020 ' must remain part of strategy row 2.",
+    "reference_v20_v2_status": "PASS",
     "mesh_stub": "mesh_records.json",
-    "mesh_stub_note": "Fixture-only deterministic MeSH metadata. IDs/URIs are deliberately synthetic and must not be treated as production NLM data."
+    "mesh_stub_note": "Fixture-only deterministic MeSH metadata. IDs/URIs are synthetic and must not be treated as production NLM data."
   },
   {
-    "id": "12_historical_mesh",
+    "id": "12_year_leading_continuation",
+    "purpose": "Protect an RTF physical continuation line that begins with a year from being misclassified as a new Ovid strategy row.",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#3 #1 OR #2",
+    "required_audit_substrings": [],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [
+      "#2020"
+    ],
+    "reference_v20_v2_status": "KNOWN_FAIL",
+    "reference_v20_v2_note": "The current parser may interpret the physical continuation beginning '2020 publication...' as strategy row 2020. Normative v20 requires it to remain part of row 2."
+  },
+  {
+    "id": "13_historical_mesh",
     "purpose": "Reviewed historical MeSH alias canonicalised to the verified current preferred label.",
     "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
     "input_modes": [
@@ -274,7 +295,7 @@
     "mesh_stub_note": "Fixture-only deterministic MeSH metadata. IDs/URIs are deliberately synthetic and must not be treated as production NLM data."
   },
   {
-    "id": "13_pharmacological_action",
+    "id": "14_pharmacological_action",
     "purpose": "Explicitly exploded verified pharmacological-action heading expands to [mh] OR [pa].",
     "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
     "input_modes": [
@@ -297,7 +318,7 @@
     "mesh_stub_note": "Fixture-only deterministic MeSH metadata. IDs/URIs are deliberately synthetic and must not be treated as production NLM data."
   },
   {
-    "id": "14_end_date",
+    "id": "15_end_date",
     "purpose": "Pure .ed,dt. update line is omitted only when external End_date is supplied; dependent references are simplified.",
     "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
     "input_modes": [
@@ -322,7 +343,7 @@
     "reference_v20_v2_status": "PASS"
   },
   {
-    "id": "15_complex_real_cochrane",
+    "id": "16_complex_real_cochrane",
     "purpose": "End-to-end real Cochrane strategy combining MeSH, historical aliasing, free text, truncation, RCT filters, animal exclusion and line references.",
     "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
     "input_modes": [

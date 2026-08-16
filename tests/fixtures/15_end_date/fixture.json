@@ -1,0 +1,25 @@
+{
+  "id": "15_end_date",
+  "purpose": "Pure .ed,dt. update line is omitted only when external End_date is supplied; dependent references are simplified.",
+  "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+  "input_modes": [
+    "paste",
+    "rtf"
+  ],
+  "paste_input": "input_strategy.txt",
+  "rtf_input": "input.rtf",
+  "input_options": "input_options.json",
+  "expected_output": "expected_pubmed.txt",
+  "expected_validation_status": "ok",
+  "expected_last_output_line": "#5 #3",
+  "required_audit_substrings": [
+    "ovid_ed_dt_update_line_omitted_external_end_date_applied",
+    "dropped_short_root_line_reference_simplified:#4 in #5"
+  ],
+  "forbidden_audit_substrings": [],
+  "forbidden_output_substrings": [
+    ".ed,dt.",
+    "#4 "
+  ],
+  "reference_v20_v2_status": "PASS"
+}

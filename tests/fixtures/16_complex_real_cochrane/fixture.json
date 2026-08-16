@@ -1,0 +1,25 @@
+{
+  "id": "16_complex_real_cochrane",
+  "purpose": "End-to-end real Cochrane strategy combining MeSH, historical aliasing, free text, truncation, RCT filters, animal exclusion and line references.",
+  "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+  "input_modes": [
+    "paste",
+    "rtf"
+  ],
+  "paste_input": "input_strategy.txt",
+  "rtf_input": "input.rtf",
+  "input_options": "input_options.json",
+  "expected_output": "expected_pubmed.txt",
+  "expected_validation_status": "ok",
+  "expected_last_output_line": "#20 #8 AND #19",
+  "required_audit_substrings": [
+    "mesh_resolved:Nephrosis Lipoid=>Nephrosis, Lipoid",
+    "converted_ovid_dollar_truncation_to_pubmed_star"
+  ],
+  "forbidden_audit_substrings": [],
+  "forbidden_output_substrings": [],
+  "reference_v20_v2_status": "PASS",
+  "mesh_stub": "mesh_records.json",
+  "mesh_stub_note": "Fixture-only deterministic MeSH metadata. IDs/URIs are deliberately synthetic and must not be treated as production NLM data.",
+  "source_note": "Real Ovid MEDLINE strategy content from Cochrane review CD003594 (Interventions for idiopathic steroid-resistant nephrotic syndrome in children), 20 preserved numbered lines. The RTF container in this fixture is reconstructed for deterministic testing rather than copied as the original Word RTF binary."
+}

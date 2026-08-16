@@ -1,3 +1,4 @@
-#1 "Asthma"[mh]
+#1 asthma[tw]
 #2 wheeze[tw]
 #3 #1 OR #2
+#5 #3

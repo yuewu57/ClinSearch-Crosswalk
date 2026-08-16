@@ -1,0 +1,14 @@
+{
+  "nephrosis lipoid": {
+    "status": "resolved",
+    "source_label": "Nephrosis Lipoid",
+    "matched_label": "Nephrosis, Lipoid",
+    "match_type": "historical",
+    "canonical_label": "Nephrosis, Lipoid",
+    "descriptor_id": "FIXTURE_NEPHROSIS_LIPOID",
+    "descriptor_uri": "fixture://mesh/Nephrosis_Lipoid",
+    "record_class": "TopicalDescriptor",
+    "is_pharmacological_action": false,
+    "mesh_year": 2026
+  }
+}

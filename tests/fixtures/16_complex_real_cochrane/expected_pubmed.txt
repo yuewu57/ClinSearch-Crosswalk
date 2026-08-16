@@ -1,0 +1,20 @@
+#1 "Nephrotic Syndrome"[mh]
+#2 "Nephrosis, Lipoid"[mh]
+#3 "nephrotic syndrome"[tw]
+#4 "lipoid nephrosis"[tw]
+#5 "minimal change glomerulonephritis"[tw]
+#6 "minimal change nephr*"[tw]
+#7 "idiopathic steroid resistant nephrotic syndrome"[tw]
+#8 #1 OR #2 OR #3 OR #4 OR #5 OR #6 OR #7
+#9 "Randomized Controlled Trial"[pt]
+#10 "Controlled Clinical Trial"[pt]
+#11 randomized[tiab]
+#12 placebo[tiab]
+#13 drug therapy[sh]
+#14 randomly[tiab]
+#15 trial[tiab]
+#16 groups[tiab]
+#17 #9 OR #10 OR #11 OR #12 OR #13 OR #14 OR #15 OR #16
+#18 animals[mh] NOT humans[mh]
+#19 #17 NOT #18
+#20 #8 AND #19

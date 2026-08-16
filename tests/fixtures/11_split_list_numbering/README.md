@@ -1,14 +1,22 @@
 # 11_split_list_numbering
 
-**Purpose:** Preserve Word list numbering when labels and expressions are split; protect a year-leading continuation from becoming a spurious row.
+**Purpose:** Verify the already-supported split Word-list-numbering case in
+isolation.
 
-Files:
+The RTF physically stores each list number separately from its expression:
 
-- `input_strategy.txt` — direct-paste input.
-- `input.rtf` — equivalent RTF-upload input.
-- `input_options.json` — options/metadata supplied separately in paste mode.
-- `expected_pubmed.txt` — normative v20 expected strategy.
-- `fixture.json` — assertions and current-reference status.
-- `mesh_records.json` — deterministic fixture-only MeSH stub.
+```text
+1.
+Asthma/
 
-**Current reference implementation:** KNOWN_FAIL. Split list labels themselves are supported, but the normative v20 year-leading continuation protection is documented as absent in the current executable. The physical continuation beginning '2020 ' must remain part of strategy row 2.
+2.
+wheeze.tw.
+
+3.
+1 or 2
+```
+
+This fixture should PASS in the current v20-v2 reference implementation.
+
+It intentionally contains no year-leading continuation line; that is tested
+separately in fixture 12.
