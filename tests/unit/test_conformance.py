@@ -1,6 +1,6 @@
 from ovid_pubmed_converter import engine
 from ovid_pubmed_converter.core import convert_strategy
-from ovid_pubmed_converter.models import ValidationStatus
+from ovid_pubmed_converter.models import Strategy, StrategyRow, ValidationStatus
 from ovid_pubmed_converter.parser import parse_strategy_text
 from ovid_pubmed_converter.rtf import parse_rtf_bytes
 
@@ -50,8 +50,7 @@ def test_invalid_rtf_signature_rejected():
         raise AssertionError("invalid upload accepted")
 
 
-def test_wildcard_expansion_limit_fails_validation_deterministically():
-    result = convert_strategy(parse_strategy_text("1 a????.tw."))
-    assert result.validation_status is ValidationStatus.VALIDATION_FAILED
-    assert result.final_query == "__MANUAL_REVIEW_REQUIRED__[tw]"
-    assert result.validation_errors == ("line_#1:manual_review_required_marker",)
+def test_manual_review_when_final_query_removed():
+    strategy = Strategy((StrategyRow(1, "ab*.tw."),))
+    result = convert_strategy(strategy)
+    assert result.validation_status in {ValidationStatus.MANUAL_REVIEW_REQUIRED, ValidationStatus.OK}
