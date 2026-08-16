@@ -1,5 +1,0 @@
-1. asthma.tw.
-2. wheeze.tw.
-3. 1 or 2
-4. (202401* or 2025*).ed,dt.
-5. 3 and 4
