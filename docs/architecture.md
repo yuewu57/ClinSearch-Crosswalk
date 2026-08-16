@@ -1,0 +1,7 @@
+# Architecture
+
+Both input modes converge on `Strategy`: pasted text goes directly through `parse_strategy_text`; uploaded bytes go through the byte-first RTF normalizer and then the same row semantics. `convert_strategy` is the only strategy-level semantic orchestrator. It calls the preserved v20 rule engine, exact cache-first MeSH resolver, dependency-aware validation, and produces a UI-independent `ConversionResult`. CLI and Streamlit are adapters over the same API. Output renderers produce TXT, audit CSV, validation JSON, and RTF in memory.
+
+The web adapter locates its production cache relative to the repository. Each conversion receives its own resolver in exact-online mode. The core first discovers required headings with an isolated cache-only resolver, prefetches only those labels, and then converts from that request's records/session results. A `ContextVar` binds the resolver to the current task/thread, replacing conversion dependence on shared mutable global resolver selection. Resolver mode is not mutated during conversion. Hosted web resolvers load the reviewed cache read-only and keep new exact results in their request-local session; the explicit cache builder uses serialized, merge-before-write atomic updates. NLM failure remains an executable source-heading fallback with an audit event.
+
+The UI never supplies server paths. Uploaded bytes use an automatically cleaned temporary directory only during RTF normalization. Core regression tests use fixture-only exact MeSH records and no network.
