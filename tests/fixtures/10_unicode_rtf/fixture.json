@@ -1,0 +1,20 @@
+{
+  "id": "10_unicode_rtf",
+  "purpose": "Normative RTF code-page handling: decode raw Windows-1252 correctly, then normalise Unicode punctuation.",
+  "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+  "input_modes": [
+    "paste",
+    "rtf"
+  ],
+  "paste_input": "input_strategy.txt",
+  "rtf_input": "input.rtf",
+  "input_options": "input_options.json",
+  "expected_output": "expected_pubmed.txt",
+  "expected_validation_status": "ok",
+  "expected_last_output_line": "#1 \"steroid-resistant\"[tw]",
+  "required_audit_substrings": [],
+  "forbidden_audit_substrings": [],
+  "forbidden_output_substrings": [],
+  "reference_v20_v2_status": "KNOWN_FAIL",
+  "reference_v20_v2_note": "The corrected v20-v2 maintenance file still inherits the documented UTF-8-strict RTF reader and is expected to fail on this raw cp1252 byte. Codex should make this fixture pass when implementing normative Section 3.1."
+}

@@ -1,0 +1,6 @@
+1. randomized controlled trial.pt.
+2. controlled clinical trial.pt.
+3. placebo.ab.
+4. randomly.ab.
+5. trial.ti.
+6. or/1-5

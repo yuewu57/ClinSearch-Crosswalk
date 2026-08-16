@@ -1,0 +1,2 @@
+1. exp animals/ not humans.sh.
+2. (animal not human).sh.

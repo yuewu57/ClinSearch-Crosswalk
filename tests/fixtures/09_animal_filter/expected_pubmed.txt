@@ -1,0 +1,2 @@
+#1 animals[mh] NOT humans[mh]
+#2 (animals[mh] NOT humans[mh])

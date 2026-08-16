@@ -1,0 +1,24 @@
+{
+  "id": "09_animal_filter",
+  "purpose": "Standard Cochrane animal exclusion and strict legacy animal-only filter.",
+  "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+  "input_modes": [
+    "paste",
+    "rtf"
+  ],
+  "paste_input": "input_strategy.txt",
+  "rtf_input": "input.rtf",
+  "input_options": "input_options.json",
+  "expected_output": "expected_pubmed.txt",
+  "expected_validation_status": "ok",
+  "expected_last_output_line": "#2 (animals[mh] NOT humans[mh])",
+  "required_audit_substrings": [
+    "v18_strict_animal_only_filter_applied"
+  ],
+  "forbidden_audit_substrings": [],
+  "forbidden_output_substrings": [
+    "humans.sh.",
+    "exp animals/"
+  ],
+  "reference_v20_v2_status": "PASS"
+}

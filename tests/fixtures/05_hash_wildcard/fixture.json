@@ -1,0 +1,23 @@
+{
+  "id": "05_hash_wildcard",
+  "purpose": "Curated mandatory single-character # expansion for an -ise/-ize family.",
+  "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+  "input_modes": [
+    "paste",
+    "rtf"
+  ],
+  "paste_input": "input_strategy.txt",
+  "rtf_input": "input.rtf",
+  "input_options": "input_options.json",
+  "expected_output": "expected_pubmed.txt",
+  "expected_validation_status": "ok",
+  "expected_last_output_line": "#1 (organisation*[tw] OR organization*[tw])",
+  "required_audit_substrings": [
+    "uk_us_ise_ize_pattern_expanded:organi#ation*"
+  ],
+  "forbidden_audit_substrings": [],
+  "forbidden_output_substrings": [
+    "#ation"
+  ],
+  "reference_v20_v2_status": "PASS"
+}

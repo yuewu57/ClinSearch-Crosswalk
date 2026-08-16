@@ -1,0 +1,22 @@
+{
+  "id": "11_split_list_numbering",
+  "purpose": "Preserve Word list numbering when labels and expressions are split; protect a year-leading continuation from becoming a spurious row.",
+  "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+  "input_modes": [
+    "paste",
+    "rtf"
+  ],
+  "paste_input": "input_strategy.txt",
+  "rtf_input": "input.rtf",
+  "input_options": "input_options.json",
+  "expected_output": "expected_pubmed.txt",
+  "expected_validation_status": "ok",
+  "expected_last_output_line": "#3 #1 OR #2",
+  "required_audit_substrings": [],
+  "forbidden_audit_substrings": [],
+  "forbidden_output_substrings": [],
+  "reference_v20_v2_status": "KNOWN_FAIL",
+  "reference_v20_v2_note": "Split list labels themselves are supported, but the normative v20 year-leading continuation protection is documented as absent in the current executable. The physical continuation beginning '2020 ' must remain part of strategy row 2.",
+  "mesh_stub": "mesh_records.json",
+  "mesh_stub_note": "Fixture-only deterministic MeSH metadata. IDs/URIs are deliberately synthetic and must not be treated as production NLM data."
+}

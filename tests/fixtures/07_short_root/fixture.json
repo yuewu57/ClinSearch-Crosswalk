@@ -1,0 +1,23 @@
+{
+  "id": "07_short_root",
+  "purpose": "Short-root hierarchy: curated morphology and literal preservation rather than silent deletion.",
+  "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+  "input_modes": [
+    "paste",
+    "rtf"
+  ],
+  "paste_input": "input_strategy.txt",
+  "rtf_input": "input.rtf",
+  "input_options": "input_options.json",
+  "expected_output": "expected_pubmed.txt",
+  "expected_validation_status": "ok",
+  "expected_last_output_line": "#3 #1 OR #2",
+  "required_audit_substrings": [
+    "short_root_morphology_expanded_using_curated_dictionary:job*",
+    "unknown_short_root_truncation_literalized:abc*->abc",
+    "major_semantic_approximation_possible_recall_loss"
+  ],
+  "forbidden_audit_substrings": [],
+  "forbidden_output_substrings": [],
+  "reference_v20_v2_status": "PASS"
+}

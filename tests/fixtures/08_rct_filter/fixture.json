@@ -1,0 +1,23 @@
+{
+  "id": "08_rct_filter",
+  "purpose": "High-priority Cochrane RCT filter mappings, including .ab. to [tiab].",
+  "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+  "input_modes": [
+    "paste",
+    "rtf"
+  ],
+  "paste_input": "input_strategy.txt",
+  "rtf_input": "input.rtf",
+  "input_options": "input_options.json",
+  "expected_output": "expected_pubmed.txt",
+  "expected_validation_status": "ok",
+  "expected_last_output_line": "#6 #1 OR #2 OR #3 OR #4 OR #5",
+  "required_audit_substrings": [],
+  "forbidden_audit_substrings": [],
+  "forbidden_output_substrings": [
+    "[ab]",
+    ".ab.",
+    ".pt."
+  ],
+  "reference_v20_v2_status": "PASS"
+}

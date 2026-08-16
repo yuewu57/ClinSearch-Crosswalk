@@ -1,0 +1,349 @@
+[
+  {
+    "id": "01_basic_mesh",
+    "purpose": "Basic slash-heading conversion to a verified MeSH descriptor.",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#1 \"Asthma\"[mh]",
+    "required_audit_substrings": [
+      "mesh_resolved:Asthma=>Asthma",
+      "ovid_heading_exploded:no"
+    ],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [],
+    "reference_v20_v2_status": "PASS",
+    "mesh_stub": "mesh_records.json",
+    "mesh_stub_note": "Fixture-only deterministic MeSH metadata. IDs/URIs are deliberately synthetic and must not be treated as production NLM data."
+  },
+  {
+    "id": "02_boolean_references",
+    "purpose": "Boolean normalisation and conversion of Ovid line references/ranges.",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#4 #3 NOT #2",
+    "required_audit_substrings": [],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [
+      "or/1-2"
+    ],
+    "reference_v20_v2_status": "PASS"
+  },
+  {
+    "id": "03_adj3",
+    "purpose": "Recall-oriented approximation of Ovid adj3 as PubMed AND with field distribution.",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#1 (upper[tw] AND \"respiratory tract infection*\"[tw])",
+    "required_audit_substrings": [
+      "ovid_adjacency_converted_to_and"
+    ],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [
+      "adj3"
+    ],
+    "reference_v20_v2_status": "PASS"
+  },
+  {
+    "id": "04_question_wildcard",
+    "purpose": "Curated interpretation of Ovid ? including UK/US spelling and terminal singular/plural.",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#3 #1 OR #2",
+    "required_audit_substrings": [
+      "single_char_wildcard_special_exception_applied:randomi?ed",
+      "terminal_optional_wildcard_interpreted_as_singular_plural:control group?"
+    ],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [
+      "?"
+    ],
+    "reference_v20_v2_status": "PASS"
+  },
+  {
+    "id": "05_hash_wildcard",
+    "purpose": "Curated mandatory single-character # expansion for an -ise/-ize family.",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#1 (organisation*[tw] OR organization*[tw])",
+    "required_audit_substrings": [
+      "uk_us_ise_ize_pattern_expanded:organi#ation*"
+    ],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [
+      "#ation"
+    ],
+    "reference_v20_v2_status": "PASS"
+  },
+  {
+    "id": "06_truncation",
+    "purpose": "Standard and limited Ovid truncation converted to PubMed unlimited wildcard.",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#3 #1 OR #2",
+    "required_audit_substrings": [
+      "converted_ovid_dollar_truncation_to_pubmed_star",
+      "limited_ovid_truncation_approximated_as_pubmed_unlimited_wildcard"
+    ],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [
+      "$"
+    ],
+    "reference_v20_v2_status": "PASS"
+  },
+  {
+    "id": "07_short_root",
+    "purpose": "Short-root hierarchy: curated morphology and literal preservation rather than silent deletion.",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#3 #1 OR #2",
+    "required_audit_substrings": [
+      "short_root_morphology_expanded_using_curated_dictionary:job*",
+      "unknown_short_root_truncation_literalized:abc*->abc",
+      "major_semantic_approximation_possible_recall_loss"
+    ],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [],
+    "reference_v20_v2_status": "PASS"
+  },
+  {
+    "id": "08_rct_filter",
+    "purpose": "High-priority Cochrane RCT filter mappings, including .ab. to [tiab].",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#6 #1 OR #2 OR #3 OR #4 OR #5",
+    "required_audit_substrings": [],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [
+      "[ab]",
+      ".ab.",
+      ".pt."
+    ],
+    "reference_v20_v2_status": "PASS"
+  },
+  {
+    "id": "09_animal_filter",
+    "purpose": "Standard Cochrane animal exclusion and strict legacy animal-only filter.",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#2 (animals[mh] NOT humans[mh])",
+    "required_audit_substrings": [
+      "v18_strict_animal_only_filter_applied"
+    ],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [
+      "humans.sh.",
+      "exp animals/"
+    ],
+    "reference_v20_v2_status": "PASS"
+  },
+  {
+    "id": "10_unicode_rtf",
+    "purpose": "Normative RTF code-page handling: decode raw Windows-1252 correctly, then normalise Unicode punctuation.",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#1 \"steroid-resistant\"[tw]",
+    "required_audit_substrings": [],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [],
+    "reference_v20_v2_status": "KNOWN_FAIL",
+    "reference_v20_v2_note": "The corrected v20-v2 maintenance file still inherits the documented UTF-8-strict RTF reader and is expected to fail on this raw cp1252 byte. Codex should make this fixture pass when implementing normative Section 3.1."
+  },
+  {
+    "id": "11_split_list_numbering",
+    "purpose": "Preserve Word list numbering when labels and expressions are split; protect a year-leading continuation from becoming a spurious row.",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#3 #1 OR #2",
+    "required_audit_substrings": [],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [],
+    "reference_v20_v2_status": "KNOWN_FAIL",
+    "reference_v20_v2_note": "Split list labels themselves are supported, but the normative v20 year-leading continuation protection is documented as absent in the current executable. The physical continuation beginning '2020 ' must remain part of strategy row 2.",
+    "mesh_stub": "mesh_records.json",
+    "mesh_stub_note": "Fixture-only deterministic MeSH metadata. IDs/URIs are deliberately synthetic and must not be treated as production NLM data."
+  },
+  {
+    "id": "12_historical_mesh",
+    "purpose": "Reviewed historical MeSH alias canonicalised to the verified current preferred label.",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#1 \"Nephrosis, Lipoid\"[mh]",
+    "required_audit_substrings": [
+      "mesh_resolved:Nephrosis Lipoid=>Nephrosis, Lipoid"
+    ],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [],
+    "reference_v20_v2_status": "PASS",
+    "mesh_stub": "mesh_records.json",
+    "mesh_stub_note": "Fixture-only deterministic MeSH metadata. IDs/URIs are deliberately synthetic and must not be treated as production NLM data."
+  },
+  {
+    "id": "13_pharmacological_action",
+    "purpose": "Explicitly exploded verified pharmacological-action heading expands to [mh] OR [pa].",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#1 (\"Antineoplastic Agents\"[mh] OR \"Antineoplastic Agents\"[pa])",
+    "required_audit_substrings": [
+      "exploded_pharmacological_action_expanded_to_mh_or_pa:Antineoplastic Agents"
+    ],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [],
+    "reference_v20_v2_status": "PASS",
+    "mesh_stub": "mesh_records.json",
+    "mesh_stub_note": "Fixture-only deterministic MeSH metadata. IDs/URIs are deliberately synthetic and must not be treated as production NLM data."
+  },
+  {
+    "id": "14_end_date",
+    "purpose": "Pure .ed,dt. update line is omitted only when external End_date is supplied; dependent references are simplified.",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#5 #3",
+    "required_audit_substrings": [
+      "ovid_ed_dt_update_line_omitted_external_end_date_applied",
+      "dropped_short_root_line_reference_simplified:#4 in #5"
+    ],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [
+      ".ed,dt.",
+      "#4 "
+    ],
+    "reference_v20_v2_status": "PASS"
+  },
+  {
+    "id": "15_complex_real_cochrane",
+    "purpose": "End-to-end real Cochrane strategy combining MeSH, historical aliasing, free text, truncation, RCT filters, animal exclusion and line references.",
+    "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+    "input_modes": [
+      "paste",
+      "rtf"
+    ],
+    "paste_input": "input_strategy.txt",
+    "rtf_input": "input.rtf",
+    "input_options": "input_options.json",
+    "expected_output": "expected_pubmed.txt",
+    "expected_validation_status": "ok",
+    "expected_last_output_line": "#20 #8 AND #19",
+    "required_audit_substrings": [
+      "mesh_resolved:Nephrosis Lipoid=>Nephrosis, Lipoid",
+      "converted_ovid_dollar_truncation_to_pubmed_star"
+    ],
+    "forbidden_audit_substrings": [],
+    "forbidden_output_substrings": [],
+    "reference_v20_v2_status": "PASS",
+    "mesh_stub": "mesh_records.json",
+    "mesh_stub_note": "Fixture-only deterministic MeSH metadata. IDs/URIs are deliberately synthetic and must not be treated as production NLM data.",
+    "source_note": "Real Ovid MEDLINE strategy content from Cochrane review CD003594 (Interventions for idiopathic steroid-resistant nephrotic syndrome in children), 20 preserved numbered lines. The RTF container in this fixture is reconstructed for deterministic testing rather than copied as the original Word RTF binary."
+  }
+]

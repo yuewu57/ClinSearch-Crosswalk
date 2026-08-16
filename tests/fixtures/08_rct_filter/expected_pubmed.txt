@@ -1,0 +1,6 @@
+#1 "Randomized Controlled Trial"[pt]
+#2 "Controlled Clinical Trial"[pt]
+#3 placebo[tiab]
+#4 randomly[tiab]
+#5 trial[ti]
+#6 #1 OR #2 OR #3 OR #4 OR #5

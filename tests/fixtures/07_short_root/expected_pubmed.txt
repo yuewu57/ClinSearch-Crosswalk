@@ -1,0 +1,3 @@
+#1 (job[tw] OR jobs[tw])
+#2 abc[tw]
+#3 #1 OR #2

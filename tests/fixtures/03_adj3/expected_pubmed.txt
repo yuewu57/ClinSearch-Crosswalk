@@ -1,0 +1,1 @@
+#1 (upper[tw] AND "respiratory tract infection*"[tw])

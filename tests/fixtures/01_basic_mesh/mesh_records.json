@@ -1,0 +1,14 @@
+{
+  "asthma": {
+    "status": "resolved",
+    "source_label": "Asthma",
+    "matched_label": "Asthma",
+    "match_type": "preferred",
+    "canonical_label": "Asthma",
+    "descriptor_id": "FIXTURE_ASTHMA",
+    "descriptor_uri": "fixture://mesh/Asthma",
+    "record_class": "TopicalDescriptor",
+    "is_pharmacological_action": false,
+    "mesh_year": 2026
+  }
+}
