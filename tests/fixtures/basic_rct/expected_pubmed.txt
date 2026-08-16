@@ -1,0 +1,5 @@
+#1 "Heart Failure"[mh]
+#2 "Randomized Controlled Trial"[pt]
+#3 placebo[tiab]
+#4 #2 OR #3
+#5 #1 AND #4
