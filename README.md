@@ -6,7 +6,7 @@ A deterministic, rule-based, recall-oriented converter implementing the approved
 
 - Paste a numbered Ovid MEDLINE strategy or upload one RTF file.
 - One shared Python conversion core for web, CLI, paste, RTF, and future benchmarks.
-- Exact cache-first MeSH resolution, exact online lookup in the public web app, and executable source-heading fallback with an audit warning.
+- Exact cache-first MeSH resolution, optional exact online lookup, and executable source-heading fallback with an audit warning.
 - Structured validation, active-query dependency analysis, and TXT/CSV/JSON/RTF downloads.
 - No accounts, database, or persistent upload storage.
 
@@ -81,58 +81,13 @@ Regression tests use deterministic fixture records and do not require live NLM a
 
 Resolution is exact only: preferred labels, exact entry terms, and reviewed historical aliases. There is no fuzzy matching. Successful optional online resolutions may be written to a versioned JSON cache. Cache misses or NLM service failures retain an executable quoted source heading with `[mh]` and add an audit warning. Only heading labels needed for exact online resolution are transmitted to NLM; complete user strategies are not transmitted.
 
-The public web adapter locates the newest dated v20 cache under `resources/`
-through a repository-relative path. It checks that cache first, resolves only
-required missing heading labels through the exact NLM service, and uses the
-normative audited fallback if NLM is unavailable. Users cannot supply a server
-cache path through the web interface. Hosted-session lookup results are kept in
-that request's resolver and are not written back into the deployed repository;
-the reviewed bundled cache is updated only through the explicit builder.
-
 Fixture `mesh_records.json` files contain synthetic identifiers for tests and must never be copied into production resources.
-
-### Build the production cache
-
-Keep the private 61-study corpus outside this repository. From the repository
-root, with the development environment active, run:
-
-```bash
-python -m ovid_pubmed_converter.mesh_cache build \
-  --dataset-root /absolute/path/to/dataset_61_cochrane \
-  --glob '**/*.rtf' \
-  --output resources/mesh_resolution_cache_v20_v1_YW_16082026.json
-```
-
-The builder reads strategy files locally, sends only controlled-heading labels
-requiring exact resolution to NLM, and never copies the corpus into the cache.
-It exits with status 2 and lists unresolved headings or malformed inputs when a
-complete frozen cache was not produced. Inspect the result with:
-
-```bash
-python -m ovid_pubmed_converter.mesh_cache inspect \
-  resources/mesh_resolution_cache_v20_v1_YW_16082026.json
-```
-
-Commit only a reviewed production cache with genuine NLM metadata. A frozen
-benchmark can then pass that file to `cli/batch_convert.py --mesh-cache ...`
-without `--online-mesh`; cache-only mode remains the CLI default.
 
 ## Validation and limitations
 
 Validation checks syntax, PubMed tags, source rows, references, cycles, and the active final-query dependency closure. Problematic unused rows remain auditable. Unsupported syntax, bounded wildcard limits, approximation flags, and unresolved cases may require manual review.
 
 This software does not test live PubMed retrieval equivalence. Users remain responsible for peer review and retrieval testing of translated strategies.
-
-### Final local smoke test
-
-1. Start `streamlit run web/app.py` and open <http://localhost:8501>.
-2. Paste `tests/fixtures/01_basic_mesh/input_strategy.txt` and convert it.
-3. Confirm validation passes and copy controls are available on both code blocks.
-4. Download TXT, audit CSV, and validation JSON.
-5. Upload `tests/fixtures/01_basic_mesh/input.rtf` and confirm identical output.
-6. Download the example RTF template and converted RTF.
-7. Repeat with an unresolved heading while offline and confirm the executable
-   source-heading fallback and audit warning are visible.
 
 ## Deployment
 
@@ -152,9 +107,5 @@ Uploads are accepted as bytes, signature-checked, size-limited, processed in a c
 ## Citation, licence, and version
 
 See [`CITATION.cff`](CITATION.cff). Project code is Apache-2.0; MeSH terminology remains subject to NLM terms and is not relicensed by this project. See [`NOTICE`](NOTICE).
-
-Before the first public release, replace the clearly marked author field in
-`CITATION.cff` with approved person or organisation metadata and add the real
-repository URL if desired. No author or repository identity is guessed here.
 
 Converter version: **v20 / 20.0.0**. A suitable first public tag after deployment acceptance is `v20.0.0`.

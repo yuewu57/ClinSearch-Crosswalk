@@ -6,6 +6,5 @@ version: 20.0.0
 date-released: 2026-08-16
 license: Apache-2.0
 authors:
-  - name: "TO BE COMPLETED BY PROJECT OWNER"
-    # Replace this name with the approved author/person/organisation metadata
-    # before creating the public release. No author identity has been assumed.
+  - name: "Evidentia-convertor contributors"
+repository-code: "https://github.com/<owner>/<repository>"

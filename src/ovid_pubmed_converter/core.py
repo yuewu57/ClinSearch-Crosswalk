@@ -8,6 +8,7 @@ from .models import ConvertedRow, ConversionResult, Strategy, ValidationStatus
 def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionResult:
     """Convert a canonical strategy without UI or output-file dependencies."""
     resolver = mesh_resolver or engine.MeshResolver(cache_path=None, mode="cache-only")
+    engine.ACTIVE_MESH_RESOLVER = resolver
     rows = [(row.number, row.source) for row in strategy.rows]
     if not rows:
         errors = strategy.source_errors or ("no_strategy_rows",)
@@ -24,8 +25,9 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
     known = {number for number, _ in rows}
     omit_dates = strategy.end_date is not None
     uncached: set[str] = set()
-    discovery_resolver = engine.MeshResolver(cache_path=None, mode="cache-only")
-    with engine.mesh_resolver_context(discovery_resolver):
+    original_mode = resolver.mode
+    try:
+        resolver.mode = "cache-only"
         prefix = "mesh_resolution_fallback_to_source_heading:"
         for _number, expression in rows:
             _converted, flags = engine.convert_line(
@@ -38,6 +40,8 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
                     label = flag[len(prefix) :].partition(":")[0]
                     if label:
                         uncached.add(label)
+    finally:
+        resolver.mode = original_mode
     if uncached:
         resolver.prefetch(uncached)
 
@@ -45,7 +49,8 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
     originals: dict[int, str] = {}
     flags_by_line: dict[int, list[str]] = {}
     protected_errors: dict[int, list[str]] = {}
-    with engine.mesh_resolver_context(resolver):
+    try:
+        resolver.mode = "cache-only"
         for number, expression in rows:
             output, flags = engine.convert_line(
                 expression,
@@ -57,6 +62,8 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
             originals[number] = expression
             protected_errors[number] = errors
             flags_by_line[number] = list(dict.fromkeys(flags + errors))
+    finally:
+        resolver.mode = original_mode
 
     changed = True
     while changed:
