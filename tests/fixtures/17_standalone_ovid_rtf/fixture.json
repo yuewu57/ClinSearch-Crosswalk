@@ -1,0 +1,16 @@
+{
+  "id": "17_standalone_ovid_rtf",
+  "purpose": "Accept one coherent standalone numbered Ovid strategy without a Medline heading.",
+  "authority": "Normative v20 input-normalisation requirements",
+  "input_modes": ["paste", "rtf"],
+  "paste_input": "input_strategy.txt",
+  "rtf_input": "input.rtf",
+  "input_options": "input_options.json",
+  "expected_output": "expected_pubmed.txt",
+  "expected_validation_status": "ok",
+  "expected_last_output_line": "#3 #1 OR #2",
+  "required_audit_substrings": [],
+  "forbidden_audit_substrings": [],
+  "forbidden_output_substrings": [],
+  "reference_v20_v2_status": "NEW_INPUT_ADAPTER_REGRESSION"
+}
