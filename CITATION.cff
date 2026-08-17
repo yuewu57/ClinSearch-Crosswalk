@@ -1,12 +1,10 @@
 cff-version: 1.2.0
-title: "Evidentia Search Strategy Convertor: Ovid MEDLINE to PubMed"
+title: "Ovid MEDLINE to PubMed Search Strategy Converter"
 message: "If you use this software, please cite this repository and release."
 type: software
-version: 0.1.0
+version: 20.0.0
 date-released: 2026-08-16
 license: Apache-2.0
 authors:
-  - name: "TO BE COMPLETED BY PROJECT OWNER"
-    # Replace this name with approved author/person/organisation metadata.
-    # No author identity has been assumed.
-repository-code: "https://github.com/yuewu57/Evidentia-convertor"
+  - name: "Evidentia-convertor contributors"
+repository-code: "https://github.com/<owner>/<repository>"
