@@ -2,13 +2,12 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import resolver_for
 
 from ovid_pubmed_converter.core import convert_strategy
 from ovid_pubmed_converter.outputs import strategy_text
 from ovid_pubmed_converter.parser import parse_strategy_text
 from ovid_pubmed_converter.rtf import parse_rtf_bytes
-from conftest import resolver_for
-
 
 FIXTURE_IDS = [
     path.name
@@ -46,3 +45,16 @@ def test_paste_and_rtf_fixture_modes_are_identical(fixture_root, fixture_id):
         assert forbidden not in rtf_audit
     for forbidden in definition["forbidden_output_substrings"]:
         assert forbidden not in expected
+
+
+def test_standalone_numbered_ovid_rtf_regression(fixture_root):
+    """A marker-free but structurally unambiguous Ovid RTF matches paste mode."""
+    directory = fixture_root / "17_standalone_ovid_rtf"
+    paste = parse_strategy_text((directory / "input_strategy.txt").read_text(encoding="utf-8"))
+    rtf = parse_rtf_bytes((directory / "input.rtf").read_bytes())
+
+    assert rtf.metadata["source_format"] == "standalone_numbered_strategy"
+    assert rtf.source_errors == ()
+    assert [(row.number, row.source) for row in rtf.rows] == [
+        (row.number, row.source) for row in paste.rows
+    ]

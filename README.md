@@ -1,4 +1,8 @@
-# Ovid MEDLINE → PubMed Search Strategy Converter
+# Evidentia Search Strategy Convertor
+
+**Ovid MEDLINE → PubMed**
+
+Part of Evidentia
 
 A deterministic, rule-based, recall-oriented converter implementing the approved v20 rules. It translates Ovid MEDLINE syntax into PubMed syntax with line-by-line audit and local validation. It is independent of generative AI and is not affiliated with or endorsed by Cochrane, Ovid, or the U.S. National Library of Medicine (NLM).
 
@@ -16,11 +20,15 @@ Exact retrieval equivalence cannot always be guaranteed. In particular, Ovid adj
 
 ### Paste strategy
 
-Open the default **Paste strategy** tab, enter rows such as `1 exp Asthma/`, optionally enter an End date, and select **Convert pasted strategy**. Common `1`, `1.`, and `1)` row labels are accepted; a single unnumbered expression is assigned row 1.
+Open the default **Paste strategy** tab, enter rows such as `1 exp Asthma/`, and select **Convert**. Common `1`, `1.`, and `1)` row labels are accepted; a single unnumbered expression is assigned row 1.
+
+The normal interface has no end-date field. An **External source-search end date** appears under **Advanced options** only when an eligible combined Ovid `.ed,dt.` update line is detected. This technical compatibility input controls the established v20 omission rule; it does not add a PubMed publication-date restriction. The CLI `--end-date` option remains available for automated legacy workflows.
 
 ### RTF upload
 
-Open **Upload RTF**, select one `.rtf` file no larger than 2 MB, and convert. The document must contain a `Medline:` block. The byte-first parser handles declared ANSI code pages, RTF Unicode controls, ignorable destinations, and Word list labels before using the same parser and core as paste mode.
+Open **Upload RTF**, select one `.rtf` file no larger than 2 MB, and convert. The document may either contain an explicit `Medline:` block or consist entirely of one unambiguous, increasing numbered Ovid MEDLINE strategy. Do not include cover text around a standalone strategy; use the explicit `Medline:` heading when the document contains other material. The byte-first parser handles declared ANSI code pages, RTF Unicode controls, ignorable destinations, and Word list labels before using the same parser and core as paste mode.
+
+A minimal example RTF is downloadable in the upload tab. It contains only the `Medline:` heading and three example numbered rows; `Title`, `End_date`, PICO, and other metadata are not required.
 
 ## Installation and running locally
 
@@ -108,4 +116,4 @@ Uploads are accepted as bytes, signature-checked, size-limited, processed in a c
 
 See [`CITATION.cff`](CITATION.cff). Project code is Apache-2.0; MeSH terminology remains subject to NLM terms and is not relicensed by this project. See [`NOTICE`](NOTICE).
 
-Converter version: **v20 / 20.0.0**. A suitable first public tag after deployment acceptance is `v20.0.0`.
+Software version: **20.0.0**. Conversion ruleset: **v20**. The v20 label identifies the conversion semantics, not the product name.

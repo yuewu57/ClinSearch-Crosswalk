@@ -38,7 +38,9 @@ def test_duplicate_numbers_fail_source_validation():
 
 def test_missing_medline_block_is_reported():
     strategy = parse_rtf_bytes(b"{\\rtf1\\ansi no strategy}")
-    assert strategy.source_errors == ("no_medline_block",)
+    assert strategy.source_errors == (
+        "standalone_rtf_strategy_not_unambiguously_identified",
+    )
 
 
 def test_invalid_rtf_signature_rejected():
@@ -54,3 +56,24 @@ def test_manual_review_when_final_query_removed():
     strategy = Strategy((StrategyRow(1, "ab*.tw."),))
     result = convert_strategy(strategy)
     assert result.validation_status in {ValidationStatus.MANUAL_REVIEW_REQUIRED, ValidationStatus.OK}
+
+
+def test_end_date_does_not_change_an_ordinary_strategy():
+    source = "1 asthma.tw.\n2 wheeze.tw.\n3 1 or 2"
+    without_end_date = convert_strategy(parse_strategy_text(source))
+    with_end_date = convert_strategy(parse_strategy_text(source, end_date="31-12-2025"))
+
+    assert with_end_date.final_query == without_end_date.final_query
+    assert [row.converted for row in with_end_date.rows] == [
+        row.converted for row in without_end_date.rows
+    ]
+
+
+def test_end_date_only_applies_documented_ed_dt_cleanup():
+    source = "1 asthma.tw.\n2 (202401* or 2025*).ed,dt.\n3 1 and 2"
+    without_end_date = convert_strategy(parse_strategy_text(source))
+    with_end_date = convert_strategy(parse_strategy_text(source, end_date="31-12-2025"))
+
+    assert without_end_date.rows[1].converted
+    assert with_end_date.rows[1].validation_status == "removed_after_short_root_cleanup"
+    assert with_end_date.final_query == "#1"
