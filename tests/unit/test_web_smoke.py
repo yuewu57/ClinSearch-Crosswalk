@@ -5,12 +5,7 @@ import pytest
 
 from ovid_pubmed_converter.engine import MeshResolver
 from ovid_pubmed_converter.models import ValidationStatus
-from ovid_pubmed_converter.web_service import (
-    convert_paste,
-    convert_rtf,
-    download_payloads,
-    web_resolver,
-)
+from web.service import convert_paste, convert_rtf, download_payloads
 
 
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "01_basic_mesh"
@@ -51,6 +46,8 @@ def test_streamlit_application_imports_without_errors():
 
 
 def test_web_resolver_uses_bundled_cache_in_exact_online_mode():
+    from web.service import web_resolver
+
     resolver = web_resolver()
     assert resolver.mode == "online"
     assert resolver.cache_path is None
