@@ -1,7 +1,5 @@
 # RTF input template
 
-This template is for **Evidentia Search Strategy Convertor** — **Ovid MEDLINE → PubMed**, part of Evidentia.
-
 Download `resources/rtf_input_template.rtf` from the web upload tab or from this repository. Its minimum visible content is:
 
 ```text

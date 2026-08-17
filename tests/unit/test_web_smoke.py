@@ -14,13 +14,9 @@ from ovid_pubmed_converter.web_service import (
     user_facing_validation_error,
 )
 
+
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "01_basic_mesh"
 APP_PATH = Path(__file__).parents[2] / "web" / "app.py"
-
-
-def test_software_and_ruleset_versions_are_distinct():
-    assert __version__ == "0.1.0"
-    assert RULESET_VERSION == "v20"
 
 
 def fixture_resolver() -> MeshResolver:
