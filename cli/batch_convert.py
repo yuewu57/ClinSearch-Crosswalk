@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Convert one pasted-text or RTF strategy using the production core."""
 
 import argparse
@@ -12,7 +11,9 @@ from ovid_pubmed_converter.rtf import parse_rtf_bytes
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Deterministic v20 Ovid MEDLINE to PubMed converter")
+    parser = argparse.ArgumentParser(
+        description="Evidentia Search Strategy Convertor: Ovid MEDLINE to PubMed"
+    )
     parser.add_argument("input", type=Path, help="Ovid strategy .txt or .rtf")
     parser.add_argument("--end-date")
     parser.add_argument("--output-prefix", type=Path)

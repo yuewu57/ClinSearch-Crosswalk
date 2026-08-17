@@ -1,4 +1,4 @@
-"""Deterministic Ovid MEDLINE to PubMed converter."""
+"""Evidentia Search Strategy Convertor: Ovid MEDLINE to PubMed."""
 
 from .core import convert_strategy
 from .models import ConversionResult, Strategy, StrategyRow, ValidationStatus
@@ -12,4 +12,5 @@ __all__ = [
     "convert_strategy",
     "parse_strategy_text",
 ]
-__version__ = "20.0.0"
+__version__ = "0.1.0"
+RULESET_VERSION = "v20"
