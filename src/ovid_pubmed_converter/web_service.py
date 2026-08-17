@@ -1,5 +1,6 @@
 """Testable web workflow functions without Streamlit dependencies."""
 
+from ovid_pubmed_converter import engine
 from ovid_pubmed_converter.core import convert_strategy
 from ovid_pubmed_converter.mesh import load_mesh_resolver, production_cache_path
 from ovid_pubmed_converter.outputs import (
@@ -10,6 +11,22 @@ from ovid_pubmed_converter.outputs import (
 )
 from ovid_pubmed_converter.parser import parse_strategy_text
 from ovid_pubmed_converter.rtf import parse_rtf_bytes
+
+
+def has_eligible_update_date_construct(text: str) -> bool:
+    """Return whether paste text contains an eligible pure .ed,dt. row."""
+    strategy = parse_strategy_text(text)
+    return any(engine.is_pure_ovid_ed_dt_update_line(row.source) for row in strategy.rows)
+
+
+def user_facing_validation_error(error: str) -> str:
+    """Render input-adapter errors clearly while preserving audit identifiers."""
+    if error == "standalone_rtf_strategy_not_unambiguously_identified":
+        return (
+            'No explicit "Medline:" section or unique coherent numbered Ovid '
+            "strategy could be identified in the RTF."
+        )
+    return error
 
 
 def web_resolver():
