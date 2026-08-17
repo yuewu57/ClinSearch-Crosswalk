@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
 import re
 import csv
@@ -1158,20 +1160,37 @@ SELECT DISTINCT ?descriptor ?label ?class ?isPA WHERE {{
         return output
 
 
-ACTIVE_MESH_RESOLVER: MeshResolver | None = None
+ACTIVE_MESH_RESOLVER: MeshResolver | None = None  # Legacy inspection compatibility.
+_MESH_RESOLVER_CONTEXT: ContextVar[MeshResolver | None] = ContextVar(
+    "mesh_resolver", default=None
+)
 
 
 def configure_mesh_resolver(cache_path: Path | None, mode: str = "online") -> MeshResolver:
     global ACTIVE_MESH_RESOLVER
     ACTIVE_MESH_RESOLVER = MeshResolver(cache_path=cache_path, mode=mode)
+    _MESH_RESOLVER_CONTEXT.set(ACTIVE_MESH_RESOLVER)
     return ACTIVE_MESH_RESOLVER
 
 
 def get_mesh_resolver() -> MeshResolver:
     global ACTIVE_MESH_RESOLVER
+    contextual = _MESH_RESOLVER_CONTEXT.get()
+    if contextual is not None:
+        return contextual
     if ACTIVE_MESH_RESOLVER is None:
         ACTIVE_MESH_RESOLVER = MeshResolver(cache_path=None, mode="online")
     return ACTIVE_MESH_RESOLVER
+
+
+@contextmanager
+def mesh_resolver_context(resolver: MeshResolver):
+    """Bind a resolver to only the current thread/task conversion context."""
+    token = _MESH_RESOLVER_CONTEXT.set(resolver)
+    try:
+        yield resolver
+    finally:
+        _MESH_RESOLVER_CONTEXT.reset(token)
 
 
 # ---------------------------------------------------------------------
