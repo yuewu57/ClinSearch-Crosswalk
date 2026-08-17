@@ -1,7 +1,7 @@
 # Selected v20 conversion fixtures — v2
 
 These are starter **conformance and regression fixtures** for the public
-Ovid MEDLINE → PubMed converter.
+These fixtures validate **Evidentia Search Strategy Convertor** — **Ovid MEDLINE → PubMed**.
 
 ## Authority
 

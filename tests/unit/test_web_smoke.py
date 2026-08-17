@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from ovid_pubmed_converter import RULESET_VERSION, __version__
 from ovid_pubmed_converter.engine import MeshResolver
 from ovid_pubmed_converter.models import ValidationStatus
 from ovid_pubmed_converter.web_service import (
