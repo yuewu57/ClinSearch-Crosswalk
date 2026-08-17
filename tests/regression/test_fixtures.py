@@ -2,13 +2,12 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import resolver_for
 
 from ovid_pubmed_converter.core import convert_strategy
 from ovid_pubmed_converter.outputs import strategy_text
 from ovid_pubmed_converter.parser import parse_strategy_text
 from ovid_pubmed_converter.rtf import parse_rtf_bytes
-from conftest import resolver_for
-
 
 FIXTURE_IDS = [
     path.name

@@ -56,7 +56,7 @@ def parse_rtf_bytes(data: bytes) -> Strategy:
         (
             match.group(1).strip()
             for line in before
-            if (match := re.match(r"^\s*End_date\s*:\s*(.+?)\s*$", line, flags=re.I))
+            if (match := re.match(r"^\s*End_date\s*:\s*(.+?)\s*$", line, flags=re.IGNORECASE))
         ),
         None,
     )

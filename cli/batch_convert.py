@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Convert one pasted-text or RTF strategy using the production core."""
 
 import argparse

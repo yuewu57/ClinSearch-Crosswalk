@@ -2,7 +2,7 @@
 
 from . import engine
 from .audit import flatten_audit
-from .models import ConvertedRow, ConversionResult, Strategy, ValidationStatus
+from .models import ConversionResult, ConvertedRow, Strategy, ValidationStatus
 
 
 def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionResult:
@@ -79,10 +79,10 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
     final_number = order[-1] if order else None
     active = engine.final_query_dependency_closure(surviving, final_number)
     line_errors: dict[int, list[str]] = {}
-    for number in converted:
+    for number, converted_value in converted.items():
         line_errors[number] = [] if number in dropped else list(
             dict.fromkeys(
-                engine.validate_converted_expression(converted[number], allow_line_references=True)
+                engine.validate_converted_expression(converted_value, allow_line_references=True)
                 + protected_errors[number]
             )
         )
