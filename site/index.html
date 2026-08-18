@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Evidentia converts Ovid MEDLINE strategies into auditable PubMed queries.">
+    <title>Que² · Evidentia Search Strategy Convertor</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="wordmark">Que²</p>
+        <h1>Evidentia Search Strategy Convertor</h1>
+        <p class="subtitle">Ovid MEDLINE → PubMed</p>
+        <p class="version">Software 0.1.0 · Conversion ruleset v20</p>
+      </header>
+
+      <section aria-labelledby="introduction">
+        <h2 id="introduction">Transparent strategy conversion</h2>
+        <p class="lede">
+          Convert Ovid MEDLINE search strategies into transparent, auditable PubMed queries.
+          Evidentia applies a deterministic conversion ruleset to pasted strategies and RTF
+          strategy input.
+        </p>
+        <nav aria-label="Project links">
+          <a class="primary" data-converter-link>Launch Convertor</a>
+          <a href="https://github.com/yuewu57/Evidentia-convertor#readme">Documentation</a>
+          <a href="https://github.com/yuewu57/Evidentia-convertor/blob/main/docs/methodology.md">Methodology</a>
+          <a href="https://github.com/yuewu57/Evidentia-convertor">GitHub</a>
+        </nav>
+        <p class="deployment-note">
+          The interactive converter is currently a separately hosted Streamlit application.
+        </p>
+      </section>
+    </main>
+    <script src="config.js"></script>
+    <script src="site.js"></script>
+  </body>
+</html>

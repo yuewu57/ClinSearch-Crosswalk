@@ -116,4 +116,4 @@ Uploads are accepted as bytes, signature-checked, size-limited, processed in a c
 
 See [`CITATION.cff`](CITATION.cff). Project code is Apache-2.0; MeSH terminology remains subject to NLM terms and is not relicensed by this project. See [`NOTICE`](NOTICE).
 
-Software version: **20.0.0**. Conversion ruleset: **v20**. The v20 label identifies the conversion semantics, not the product name.
+Software version: **0.1.0**. Conversion ruleset: **v20**. The v20 label identifies the conversion semantics, not the product name.
