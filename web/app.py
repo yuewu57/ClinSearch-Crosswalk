@@ -14,6 +14,7 @@ from ovid_pubmed_converter.web_service import (
     has_eligible_update_date_construct,
     user_facing_validation_error,
 )
+from web.branding import BRAND_NAME, FUNCTIONAL_SUBTITLE, PRODUCT_NAME
 
 _CACHE_PATH = production_cache_path()
 _TEMPLATE_PATH = Path(__file__).resolve().parents[1] / "resources" / "rtf_input_template.rtf"
@@ -23,9 +24,10 @@ st.set_page_config(
     page_icon="🔎",
     layout="wide",
 )
-st.title("Evidentia Search Strategy Convertor")
-st.subheader("Ovid MEDLINE → PubMed")
-st.caption("Part of Evidentia")
+st.caption(BRAND_NAME)
+st.title(PRODUCT_NAME)
+st.subheader(FUNCTIONAL_SUBTITLE)
+st.caption(f"Software {__version__} · Conversion ruleset {RULESET_VERSION}")
 st.info("Deterministic, recall-oriented conversion. Review all warnings before retrieval.")
 
 with st.expander("About / Technical details"):
