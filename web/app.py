@@ -17,7 +17,6 @@ from ovid_pubmed_converter.web_service import (
 from web.branding import (
     AFFILIATION_LABEL,
     FUNCTIONAL_SUBTITLE,
-    INSTITUTIONAL_AFFILIATION,
     PRODUCT_NAME,
     QUE2_LOGO_PATH,
     STRATHCLYDE_LOGO_PATH,
@@ -31,15 +30,28 @@ st.set_page_config(
     page_icon="🔎",
     layout="wide",
 )
-st.image(str(QUE2_LOGO_PATH), width=320)
+st.markdown(
+    """
+    <style>
+    h1 {
+        font-family: Skia, "Avenir Next", "Segoe UI", sans-serif !important;
+        font-weight: 500 !important;
+        letter-spacing: -0.02em;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+brand_primary, brand_affiliation = st.columns([3, 1], gap="large")
+with brand_primary:
+    st.image(str(QUE2_LOGO_PATH), width=170)
+with brand_affiliation:
+    st.caption(AFFILIATION_LABEL)
+    st.image(str(STRATHCLYDE_LOGO_PATH), width=120)
+
 st.title(PRODUCT_NAME)
 st.subheader(FUNCTIONAL_SUBTITLE)
-st.caption(AFFILIATION_LABEL)
-st.image(
-    str(STRATHCLYDE_LOGO_PATH),
-    caption=INSTITUTIONAL_AFFILIATION,
-    width=180,
-)
 st.caption(f"Software {__version__} · Conversion ruleset {RULESET_VERSION}")
 st.info(
     "Deterministic, recall-oriented conversion. "
