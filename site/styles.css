@@ -26,26 +26,12 @@ main {
   box-shadow: 0 1rem 3rem rgb(23 35 43 / 8%);
 }
 
-.co-brand {
-  display: flex;
-  align-items: center;
-  gap: clamp(0.75rem, 3vw, 1.5rem);
-  width: min(34rem, 100%);
+.wordmark {
   margin: 0 0 1.5rem;
-}
-
-.co-brand img {
-  display: block;
-  width: calc(50% - 1rem);
-  max-height: 9rem;
-  object-fit: contain;
-}
-
-.brand-divider {
-  align-self: stretch;
-  width: 1px;
-  min-height: 5rem;
-  background: var(--accent);
+  color: var(--accent);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 h1 { margin: 0; font-size: clamp(2rem, 7vw, 3.5rem); line-height: 1.08; }
@@ -71,20 +57,4 @@ nav a:focus-visible { outline: 0.2rem solid #d28b00; outline-offset: 0.2rem; }
   :root { --accent: #8fc7e6; --surface: #17232b; --text: #f2f6f8; --muted: #b7c5cc; }
   body { background: #10191f; }
   nav a.primary { color: #10191f; }
-}
-
-@media (max-width: 32rem) {
-  .co-brand {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .co-brand img { width: 100%; }
-
-  .brand-divider {
-    align-self: auto;
-    width: 100%;
-    min-height: 1px;
-    height: 1px;
-  }
 }

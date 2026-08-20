@@ -1,12 +1,8 @@
-# Static Evidentia landing page
+# Static Que² / Evidentia landing page
 
 This directory contains dependency-free static files suitable for a future GitHub Pages
 site. It is deliberately separate from the Streamlit application and Python conversion
 engine.
-
-The landing page composes the immutable `assets/brand/que2_brand.png` and
-`assets/brand/strath_brand.jpg` files in HTML and CSS. It references those shared assets
-directly; it does not copy, modify, or combine the image files.
 
 Before deployment, set `converterUrl` in `config.js` to the real hosted Streamlit
 application URL. Until it is configured, **Launch Convertor** remains visibly disabled;
