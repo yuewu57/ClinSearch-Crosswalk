@@ -30,6 +30,6 @@ def test_static_site_places_both_brand_images_before_the_product_title():
     que2_position = index.index('../assets/brand/Que2_brand.png')
     separator_position = index.index('class="brand-separator"')
     strathclyde_position = index.index('../assets/brand/strath_brand.jpg')
-    title_position = index.index("<h1>Evidentia-CSC: a Clinical Search Convertor</h1>")
+    title_position = index.index("<h1>Evidentia Search Strategy Convertor</h1>")
 
     assert que2_position < separator_position < strathclyde_position < title_position
