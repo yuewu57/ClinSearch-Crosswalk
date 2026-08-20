@@ -1,6 +1,6 @@
 # Deployment architecture
 
-Que² is the parent visual brand for the Evidentia Search Strategy Convertor. Deployment
+Que² is the parent visual brand for the Evidentia-CSC: a Clinical Search Convertor. Deployment
 keeps the public presentation layer separate from the existing interactive application
 and deterministic Python conversion core.
 

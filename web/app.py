@@ -14,21 +14,37 @@ from ovid_pubmed_converter.web_service import (
     has_eligible_update_date_construct,
     user_facing_validation_error,
 )
-from web.branding import BRAND_NAME, FUNCTIONAL_SUBTITLE, PRODUCT_NAME
+from web.branding import (
+    AFFILIATION_LABEL,
+    FUNCTIONAL_SUBTITLE,
+    INSTITUTIONAL_AFFILIATION,
+    PRODUCT_NAME,
+    QUE2_LOGO_PATH,
+    STRATHCLYDE_LOGO_PATH,
+)
 
 _CACHE_PATH = production_cache_path()
 _TEMPLATE_PATH = Path(__file__).resolve().parents[1] / "resources" / "rtf_input_template.rtf"
 
 st.set_page_config(
-    page_title="Evidentia Search Strategy Convertor",
+    page_title="Evidentia-CSC: a Clinical Search Convertor",
     page_icon="🔎",
     layout="wide",
 )
-st.caption(BRAND_NAME)
+st.image(str(QUE2_LOGO_PATH), width=320)
 st.title(PRODUCT_NAME)
 st.subheader(FUNCTIONAL_SUBTITLE)
+st.caption(AFFILIATION_LABEL)
+st.image(
+    str(STRATHCLYDE_LOGO_PATH),
+    caption=INSTITUTIONAL_AFFILIATION,
+    width=180,
+)
 st.caption(f"Software {__version__} · Conversion ruleset {RULESET_VERSION}")
-st.info("Deterministic, recall-oriented conversion. Review all warnings before retrieval.")
+st.info(
+    "Deterministic, recall-oriented conversion. "
+    "Review all warnings before retrieval."
+)
 
 with st.expander("About / Technical details"):
     st.write(f"Software version: {__version__}")
