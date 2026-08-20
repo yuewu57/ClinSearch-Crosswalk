@@ -25,7 +25,7 @@ _CACHE_PATH = production_cache_path()
 _TEMPLATE_PATH = Path(__file__).resolve().parents[1] / "resources" / "rtf_input_template.rtf"
 
 st.set_page_config(
-    page_title="Evidentia Search Strategy Convertor",
+    page_title="Evidentia-CSC: a Clinical Search Convertor",
     page_icon="🔎",
     layout="wide",
 )

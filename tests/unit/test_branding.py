@@ -12,7 +12,7 @@ from web.branding import (
 
 def test_presentation_brand_hierarchy_is_explicit():
     assert BRAND_NAME == "Que²"
-    assert PRODUCT_NAME == "Evidentia Search Strategy Convertor"
+    assert PRODUCT_NAME == "Evidentia-CSC: a Clinical Search Convertor"
     assert FUNCTIONAL_SUBTITLE == "Ovid MEDLINE → PubMed"
 
 
