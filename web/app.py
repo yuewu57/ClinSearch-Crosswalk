@@ -15,9 +15,7 @@ from ovid_pubmed_converter.web_service import (
     user_facing_validation_error,
 )
 from web.branding import (
-    AFFILIATION_LABEL,
     FUNCTIONAL_SUBTITLE,
-    INSTITUTIONAL_AFFILIATION,
     PRODUCT_NAME,
     QUE2_LOGO_PATH,
     STRATHCLYDE_LOGO_PATH,
@@ -31,10 +29,19 @@ st.set_page_config(
     page_icon="🔎",
     layout="wide",
 )
-st.image(str(QUE2_LOGO_PATH), width=320)
+que2_brand, brand_separator, strathclyde_brand = st.columns([1, 0.08, 1])
+with que2_brand:
+    st.image(str(QUE2_LOGO_PATH), width=260)
+with brand_separator:
+    st.markdown(
+        "<div style='border-left: 1px solid #b7c5cc; height: 7rem'></div>",
+        unsafe_allow_html=True,
+    )
+with strathclyde_brand:
+    st.image(str(STRATHCLYDE_LOGO_PATH), width=260)
 st.title(PRODUCT_NAME)
 st.subheader(FUNCTIONAL_SUBTITLE)
-st.caption(AFFILIATION_LABEL)
+st.caption("Institutional affiliation")
 st.image(
     str(STRATHCLYDE_LOGO_PATH),
     caption=INSTITUTIONAL_AFFILIATION,
