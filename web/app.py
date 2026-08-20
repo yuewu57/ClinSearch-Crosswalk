@@ -14,6 +14,14 @@ from ovid_pubmed_converter.web_service import (
     has_eligible_update_date_construct,
     user_facing_validation_error,
 )
+from web.branding import (
+    FUNCTIONAL_SUBTITLE,
+    PRODUCT_NAME,
+    QUE2_BRAND_ALT,
+    QUE2_BRAND_PATH,
+    STRATH_BRAND_ALT,
+    STRATH_BRAND_PATH,
+)
 
 _CACHE_PATH = production_cache_path()
 _TEMPLATE_PATH = Path(__file__).resolve().parents[1] / "resources" / "rtf_input_template.rtf"
@@ -23,9 +31,17 @@ st.set_page_config(
     page_icon="🔎",
     layout="wide",
 )
-st.title("Evidentia Search Strategy Convertor")
-st.subheader("Ovid MEDLINE → PubMed")
-st.caption("Part of Evidentia")
+brand_left, brand_divider, brand_right = st.columns([1, 0.08, 1], gap="small")
+if QUE2_BRAND_PATH.is_file() and STRATH_BRAND_PATH.is_file():
+    brand_left.image(QUE2_BRAND_PATH, width="stretch", caption=QUE2_BRAND_ALT)
+    brand_divider.markdown("### |")
+    brand_right.image(STRATH_BRAND_PATH, width="stretch", caption=STRATH_BRAND_ALT)
+else:
+    # Do not substitute or regenerate official brand artwork if an installation is incomplete.
+    st.warning("Co-brand assets unavailable in this installation.")
+st.title(PRODUCT_NAME)
+st.subheader(FUNCTIONAL_SUBTITLE)
+st.caption(f"Software {__version__} · Conversion ruleset {RULESET_VERSION}")
 st.info("Deterministic, recall-oriented conversion. Review all warnings before retrieval.")
 
 with st.expander("About / Technical details"):
