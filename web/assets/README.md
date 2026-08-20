@@ -1,4 +1,5 @@
 # Web assets
 
-Brand images live in the repository-level `assets/brand/` directory. The Streamlit UI
-references those immutable files directly; no derived or copied brand images belong here.
+This directory is reserved for future presentation assets for the Que² visual brand.
+The current wordmark is accessible text in the UI, so no speculative logo artwork is
+stored here. A future image asset can be introduced without changing converter code.

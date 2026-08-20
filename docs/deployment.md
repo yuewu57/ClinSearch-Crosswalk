@@ -1,8 +1,8 @@
 # Deployment architecture
 
-The Que² and University of Strathclyde Glasgow marks provide a co-branded visual identity
-for the Evidentia Search Strategy Convertor. Deployment keeps the public presentation layer
-separate from the existing interactive application and deterministic Python conversion core.
+Que² is the parent visual brand for the Evidentia Search Strategy Convertor. Deployment
+keeps the public presentation layer separate from the existing interactive application
+and deterministic Python conversion core.
 
 ## Static landing page — GitHub Pages
 
@@ -11,8 +11,8 @@ Pages. Pages is not enabled by this repository change, and no deployment workflo
 automatically. When the repository owner is ready to publish it:
 
 1. configure the actual hosted converter URL once in `site/config.js`;
-2. choose a Pages publishing source or add a reviewed Pages workflow that publishes the
-   `site/` files together with the shared `assets/brand/` directory; and
+2. choose a Pages publishing source or add a reviewed Pages workflow that publishes
+   `site/`; and
 3. enable GitHub Pages in the repository settings and verify repository-relative links
    under the selected Pages base path.
 

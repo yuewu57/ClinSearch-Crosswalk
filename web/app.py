@@ -14,14 +14,7 @@ from ovid_pubmed_converter.web_service import (
     has_eligible_update_date_construct,
     user_facing_validation_error,
 )
-from web.branding import (
-    FUNCTIONAL_SUBTITLE,
-    PRODUCT_NAME,
-    QUE2_BRAND_ALT,
-    QUE2_BRAND_PATH,
-    STRATH_BRAND_ALT,
-    STRATH_BRAND_PATH,
-)
+from web.branding import BRAND_NAME, FUNCTIONAL_SUBTITLE, PRODUCT_NAME
 
 _CACHE_PATH = production_cache_path()
 _TEMPLATE_PATH = Path(__file__).resolve().parents[1] / "resources" / "rtf_input_template.rtf"
@@ -31,14 +24,7 @@ st.set_page_config(
     page_icon="🔎",
     layout="wide",
 )
-brand_left, brand_divider, brand_right = st.columns([1, 0.08, 1], gap="small")
-if QUE2_BRAND_PATH.is_file() and STRATH_BRAND_PATH.is_file():
-    brand_left.image(QUE2_BRAND_PATH, width="stretch")
-    brand_divider.markdown("### |")
-    brand_right.image(STRATH_BRAND_PATH, width="stretch")
-else:
-    # Keep the application usable in source distributions that omit optional media.
-    st.caption(f"{QUE2_BRAND_ALT} | {STRATH_BRAND_ALT}")
+st.caption(BRAND_NAME)
 st.title(PRODUCT_NAME)
 st.subheader(FUNCTIONAL_SUBTITLE)
 st.caption(f"Software {__version__} · Conversion ruleset {RULESET_VERSION}")
