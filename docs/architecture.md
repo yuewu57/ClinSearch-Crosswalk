@@ -1,4 +1,4 @@
-# Evidentia Search Strategy Convertor architecture
+# Evidentia-CSC: a Clinical Search Convertor architecture
 
 **Ovid MEDLINE → PubMed** · Part of Evidentia
 

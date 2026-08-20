@@ -1,4 +1,4 @@
-# Evidentia Search Strategy Convertor methodology
+# Evidentia-CSC: a Clinical Search Convertor methodology
 
 **Ovid MEDLINE → PubMed** · Part of Evidentia
 
