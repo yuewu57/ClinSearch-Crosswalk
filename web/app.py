@@ -48,7 +48,10 @@ st.image(
     width=180,
 )
 st.caption(f"Software {__version__} · Conversion ruleset {RULESET_VERSION}")
-st.info("Deterministic, recall-oriented conversion. Review all warnings before retrieval.")
+st.info(
+    "Deterministic, recall-oriented conversion. "
+    "Review all warnings before retrieval."
+)
 
 with st.expander("About / Technical details"):
     st.write(f"Software version: {__version__}")
