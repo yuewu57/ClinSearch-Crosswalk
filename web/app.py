@@ -41,6 +41,12 @@ with strathclyde_brand:
     st.image(str(STRATHCLYDE_LOGO_PATH), width=260)
 st.title(PRODUCT_NAME)
 st.subheader(FUNCTIONAL_SUBTITLE)
+st.caption("Institutional affiliation")
+st.image(
+    str(STRATHCLYDE_LOGO_PATH),
+    caption=INSTITUTIONAL_AFFILIATION,
+    width=180,
+)
 st.caption(f"Software {__version__} · Conversion ruleset {RULESET_VERSION}")
 st.info("Deterministic, recall-oriented conversion. Review all warnings before retrieval.")
 
