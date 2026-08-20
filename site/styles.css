@@ -26,12 +26,29 @@ main {
   box-shadow: 0 1rem 3rem rgb(23 35 43 / 8%);
 }
 
-.wordmark {
-  margin: 0 0 1.5rem;
-  color: var(--accent);
-  font-size: 1.15rem;
-  font-weight: 700;
+.primary-brand {
+  display: block;
+  width: min(55%, 18rem);
+  height: auto;
+  margin-bottom: 1.5rem;
+}
+
+.institutional-affiliation {
+  margin-top: 1.5rem;
+}
+
+.institutional-affiliation p {
+  margin: 0 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.institutional-affiliation img {
+  width: min(32%, 10rem);
+  height: auto;
 }
 
 h1 { margin: 0; font-size: clamp(2rem, 7vw, 3.5rem); line-height: 1.08; }
