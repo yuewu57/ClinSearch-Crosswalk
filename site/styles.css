@@ -26,21 +26,32 @@ main {
   box-shadow: 0 1rem 3rem rgb(23 35 43 / 8%);
 }
 
-.co-brand {
-  display: flex;
-  align-items: center;
-  gap: clamp(0.75rem, 3vw, 1.5rem);
+.primary-brand {
   margin-bottom: 1.5rem;
 }
 
-.co-brand img {
-  width: min(40%, 15rem);
+.primary-brand img {
+  display: block;
+  width: min(320px, 80vw);
   height: auto;
 }
 
-.brand-separator {
-  align-self: stretch;
-  border-left: 1px solid #b7c5cc;
+.institutional-affiliation {
+  margin-top: 1.25rem;
+}
+
+.affiliation-label {
+  margin: 0 0 0.4rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.institutional-affiliation img {
+  width: min(180px, 50vw);
+  height: auto;
 }
 
 h1 { margin: 0; font-size: clamp(2rem, 7vw, 3.5rem); line-height: 1.08; }
