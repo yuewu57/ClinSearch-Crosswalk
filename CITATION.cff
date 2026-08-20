@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "Evidentia Search Strategy Convertor: Ovid MEDLINE to PubMed"
+title: "Evidentia-CSC: a Clinical Search Convertor: Ovid MEDLINE to PubMed"
 message: "If you use this software, please cite this repository and release."
 type: software
 version: 0.1.0

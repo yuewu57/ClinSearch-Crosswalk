@@ -1,4 +1,4 @@
-"""Evidentia Search Strategy Convertor: Ovid MEDLINE to PubMed."""
+"""Evidentia-CSC: a Clinical Search Convertor: Ovid MEDLINE to PubMed."""
 
 from .core import convert_strategy
 from .models import ConversionResult, Strategy, StrategyRow, ValidationStatus
