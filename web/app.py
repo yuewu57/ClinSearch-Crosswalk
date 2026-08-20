@@ -1,5 +1,6 @@
 """Streamlit entry point for the public converter."""
 
+from base64 import b64encode
 from pathlib import Path
 
 import streamlit as st
@@ -25,30 +26,98 @@ from web.branding import (
 _CACHE_PATH = production_cache_path()
 _TEMPLATE_PATH = Path(__file__).resolve().parents[1] / "resources" / "rtf_input_template.rtf"
 
+
+def _image_data_uri(path: Path, mime_type: str) -> str:
+    """Return the original image bytes as a browser data URI without resizing."""
+    encoded = b64encode(path.read_bytes()).decode("ascii")
+    return f"data:{mime_type};base64,{encoded}"
+
+
+_QUE2_LOGO_URI = _image_data_uri(QUE2_LOGO_PATH, "image/png")
+_STRATHCLYDE_LOGO_URI = _image_data_uri(STRATHCLYDE_LOGO_PATH, "image/jpeg")
+
 st.set_page_config(
     page_title="Evidentia-CSC: a Clinical Search Convertor",
     page_icon="🔎",
     layout="wide",
 )
 st.markdown(
-    """
+    f"""
     <style>
-    h1 {
+    h1 {{
         font-family: Skia, "Avenir Next", "Segoe UI", sans-serif !important;
         font-weight: 500 !important;
         letter-spacing: -0.02em;
-    }
+    }}
+    .evidentia-brand-row {{
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 2rem;
+        margin: 0 0 0.8rem;
+        width: 100%;
+    }}
+    .evidentia-primary-brand img {{
+        display: block;
+        width: 210px;
+        max-width: 34vw;
+        height: auto;
+        image-rendering: auto;
+    }}
+    .evidentia-affiliation {{
+        margin-left: auto;
+        text-align: right;
+    }}
+    .evidentia-affiliation-label {{
+        margin: 0 0 0.35rem;
+        color: #808495;
+        font-size: 0.78rem;
+        font-weight: 500;
+        line-height: 1.2;
+    }}
+    .evidentia-affiliation img {{
+        display: block;
+        width: 135px;
+        max-width: 25vw;
+        height: auto;
+        margin-left: auto;
+        image-rendering: auto;
+    }}
+    @media (max-width: 700px) {{
+        .evidentia-brand-row {{
+            gap: 1rem;
+        }}
+        .evidentia-primary-brand img {{
+            width: 175px;
+            max-width: 48vw;
+        }}
+        .evidentia-affiliation img {{
+            width: 115px;
+            max-width: 34vw;
+        }}
+        .evidentia-affiliation-label {{
+            font-size: 0.7rem;
+        }}
+    }}
     </style>
+    <div class="evidentia-brand-row">
+      <div class="evidentia-primary-brand">
+        <img
+          src="{_QUE2_LOGO_URI}"
+          alt="QueSquared — Intelligence Compounded"
+        >
+      </div>
+      <div class="evidentia-affiliation">
+        <div class="evidentia-affiliation-label">{AFFILIATION_LABEL}</div>
+        <img
+          src="{_STRATHCLYDE_LOGO_URI}"
+          alt="University of Strathclyde Glasgow"
+        >
+      </div>
+    </div>
     """,
     unsafe_allow_html=True,
 )
-
-brand_primary, brand_affiliation = st.columns([3, 1], gap="large")
-with brand_primary:
-    st.image(str(QUE2_LOGO_PATH), width=170)
-with brand_affiliation:
-    st.caption(AFFILIATION_LABEL)
-    st.image(str(STRATHCLYDE_LOGO_PATH), width=120)
 
 st.title(PRODUCT_NAME)
 st.subheader(FUNCTIONAL_SUBTITLE)
