@@ -30,18 +30,20 @@ def test_co_brand_assets_use_the_existing_repository_images():
     assert STRATHCLYDE_LOGO_PATH.is_file()
 
 
-def test_static_site_presents_brand_product_and_affiliation_in_order():
+def test_static_site_uses_compact_top_brand_row_before_product_title():
     index = (Path(__file__).parents[2] / "site" / "index.html").read_text(encoding="utf-8")
 
+    brand_row_position = index.index('class="brand-row"')
     que2_position = index.index('../assets/brand/Que2_brand.png')
-    title_position = index.index("<h1>Evidentia-CSC: a Clinical Search Convertor</h1>")
-    subtitle_position = index.index("<p class=\"subtitle\">Ovid MEDLINE → PubMed</p>")
     affiliation_position = index.index('class="institutional-affiliation"')
     affiliation_label_position = index.index('class="affiliation-label"')
     strathclyde_position = index.index('../assets/brand/strath_brand.jpg')
+    title_position = index.index("<h1>Evidentia-CSC: a Clinical Search Convertor</h1>")
+    subtitle_position = index.index('<p class="subtitle">Ovid MEDLINE → PubMed</p>')
 
-    assert que2_position < title_position < subtitle_position
-    assert subtitle_position < affiliation_position < affiliation_label_position
-    assert affiliation_label_position < strathclyde_position
+    assert brand_row_position < que2_position < title_position
+    assert brand_row_position < affiliation_position < affiliation_label_position
+    assert affiliation_label_position < strathclyde_position < title_position
+    assert title_position < subtitle_position
     assert 'class="co-brand"' not in index
     assert 'class="brand-separator"' not in index
