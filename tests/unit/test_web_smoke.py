@@ -37,9 +37,11 @@ def test_web_paste_rtf_and_download_smoke():
     assert [row.converted for row in paste.rows] == [row.converted for row in rtf.rows]
 
     payloads = download_payloads(rtf, include_rtf=True)
+    assert payloads["pubmed_query.txt"] == b'"Asthma"[mh]\n'
     assert payloads["pubmed_strategy.txt"] == b'#1 "Asthma"[mh]\n'
     assert b"line_number,original,converted" in payloads["pubmed_audit.csv"]
     assert b'"status": "ok"' in payloads["pubmed_validation.json"]
+    assert b'"one_line_query": "\\\"Asthma\\\"[mh]"' in payloads["pubmed_validation.json"]
     assert b'"warnings":' in payloads["pubmed_validation.json"]
     assert payloads["pubmed_strategy.rtf"].startswith(b"{\\rtf1")
 
@@ -89,6 +91,9 @@ def test_rtf_template_matches_equivalent_paste_strategy():
 
     assert paste.final_query == rtf.final_query
     assert [row.converted for row in paste.rows] == [row.converted for row in rtf.rows]
+    assert download_payloads(paste)["pubmed_query.txt"] == download_payloads(rtf)[
+        "pubmed_query.txt"
+    ]
 
 
 def test_unnumbered_medline_rtf_is_recovered_by_paragraph_order():
@@ -100,6 +105,9 @@ def test_unnumbered_medline_rtf_is_recovered_by_paragraph_order():
     assert [row.number for row in result.rows] == [1, 2, 3]
     assert "rtf_line_numbers_recovered_from_medline_paragraph_order" in result.warnings
     assert "Verify the reconstructed numbering" in user_facing_warning(result.warnings[-1])
+    assert download_payloads(result)["pubmed_query.txt"] == (
+        b'("Asthma"[mh]) OR (asthma[tw])\n'
+    )
 
 
 def test_ambiguous_unnumbered_medline_rtf_is_rejected():
@@ -114,6 +122,7 @@ def test_ambiguous_unnumbered_medline_rtf_is_rejected():
     message = user_facing_validation_error(result.validation_errors[0])
     assert "line numbers were missing" in message
     assert "could not be identified safely" in message
+    assert download_payloads(result)["pubmed_query.txt"] == b""
 
 
 def test_end_date_advanced_option_detection_is_specific_to_ed_dt():

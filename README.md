@@ -8,10 +8,11 @@ A deterministic, rule-based, recall-oriented converter implementing the approved
 
 ## Purpose and features
 
-- Paste a numbered Ovid MEDLINE strategy or upload one RTF file.
+- Paste an Ovid MEDLINE strategy or upload one RTF file.
 - One shared Python conversion core for web, CLI, paste, RTF, and future benchmarks.
 - Exact cache-first MeSH resolution, optional exact online lookup, and executable source-heading fallback with an audit warning.
 - Structured validation, active-query dependency analysis, and TXT/CSV/JSON/RTF downloads.
+- A copy-ready **one-line PubMed query** is produced by recursively expanding the validated final row; the numbered PubMed strategy is retained separately for audit and troubleshooting.
 - v21 support for Ovid `/freq=N`, ignored `limit N to ...` rows with reference-safe renumbering, and PubMed-safe wildcard phrases.
 - No accounts, database, or persistent upload storage.
 
@@ -21,17 +22,28 @@ Exact retrieval equivalence cannot always be guaranteed. In particular, Ovid adj
 
 ### Paste strategy
 
-Open the default **Paste strategy** tab, enter rows such as `1 exp Asthma/`, and select **Convert**. Common `1`, `1.`, and `1)` row labels are accepted; a single unnumbered expression is assigned row 1.
-
-Automatic repair/numbering of a completely unnumbered multi-row MEDLINE strategy is deliberately **not** part of the v21 conversion ruleset. That usability feature may be added separately in the online input layer, where wrapped physical lines can be distinguished from logical search rows safely.
+Open the default **Paste strategy** tab, enter rows such as `1 exp Asthma/`, and select **Convert**. Common `1`, `1.`, and `1)` row labels are accepted. If a pasted strategy contains no row labels, each non-empty pasted line is treated as one logical strategy row and numbered sequentially; users should therefore place exactly one logical Ovid row on each pasted line.
 
 The normal interface has no end-date field. An **External source-search end date** appears under **Advanced options** only when an eligible combined Ovid `.ed,dt.` update line is detected. This technical compatibility input controls the established omission rule; it does not add a PubMed publication-date restriction. The CLI `--end-date` option remains available for automated legacy workflows.
 
 ### RTF upload
 
-Open **Upload RTF**, select one `.rtf` file no larger than 2 MB, and convert. The document may either contain an explicit `Medline:` block or consist entirely of one unambiguous, increasing numbered Ovid MEDLINE strategy. Do not include cover text around a standalone strategy; use the explicit `Medline:` heading when the document contains other material. The byte-first parser handles declared ANSI code pages, RTF Unicode controls, ignorable destinations, and Word list labels before using the same parser and core as paste mode.
+Open **Upload RTF**, select one `.rtf` file no larger than 2 MB, and convert. A numbered Ovid RTF is preferred. The document may either contain an explicit `Medline:` block or consist entirely of one unambiguous, increasing numbered Ovid MEDLINE strategy. Do not include cover text around a standalone strategy; use the explicit `Medline:` heading when the document contains other material.
+
+If an explicit `Medline:` block has no visible line numbers, the online RTF adapter reconstructs `1, 2, 3, ...` by extracted paragraph order only when every paragraph can be conservatively identified as a complete Ovid search row. The recovery is surfaced as a warning for user verification. Ambiguous unnumbered RTF content is rejected rather than guessed, and a standalone RTF without a `Medline:` heading still requires reliable numbering.
+
+The byte-first parser handles declared ANSI code pages, RTF Unicode controls, ignorable destinations, and Word list labels before using the same parser and core as paste mode.
 
 A minimal example RTF is downloadable in the upload tab. It contains only the `Medline:` heading and three example numbered rows; `Title`, `End_date`, PICO, and other metadata are not required.
+
+## Web output
+
+For a validated conversion, the web page shows two complementary PubMed representations:
+
+1. **One-line PubMed query** — the primary copy-ready query. Starting from the selected final PubMed row, Evidentia recursively substitutes every referenced `#N` row and parenthesizes each substitution to preserve Boolean precedence. Only the final row's dependency closure is expanded; unused rows are not appended to the executable query.
+2. **Numbered PubMed strategy** — retained for audit, comparison, and troubleshooting. It may contain local `#N` references because it represents the conversion row by row.
+
+The one-line query is produced only for a conversion with `ok` validation status and is locally validated again with line references disallowed. It does not add a publication-date restriction from `End_date`; that metadata remains limited to the established `.ed,dt.` compatibility rule.
 
 ## Installation and running locally
 
@@ -99,6 +111,8 @@ Fixture `mesh_records.json` files contain synthetic identifiers for tests and mu
 Validation checks syntax, PubMed tags, source rows, references, cycles, and the active final-query dependency closure. Problematic unused rows remain auditable. Unsupported syntax, bounded wildcard limits, approximation flags, and unresolved cases may require manual review.
 
 For v21, a valid whole-row `limit N to ...` is intentionally reduced to its underlying row `N`; downstream references are redirected and surviving output rows are renumbered when LIMIT removal occurs. A final LIMIT row preserves its resolved base as the effective final query, using an audited synthetic final alias when required. Valid `/freq=N` is removed; `freq=1` is redundant and `freq>1` is explicitly audited as recall broadening. Safe quoted wildcard phrases are rendered using PubMed's phrase-level field-tag form rather than automatically splitting the words with Boolean `AND`.
+
+The one-line query resolver does not alter these v21 conversion semantics. It operates only after conversion and validation, recursively expands the final dependency graph, preserves Boolean grouping with parentheses, and rejects unresolved/cyclic line references rather than guessing.
 
 This software does not test live PubMed retrieval equivalence. Users remain responsible for peer review and retrieval testing of translated strategies.
 
