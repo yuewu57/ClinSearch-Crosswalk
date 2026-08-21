@@ -32,6 +32,7 @@ class ConvertedRow:
     audit_flags: tuple[str, ...]
     validation_status: str
     validation_errors: tuple[str, ...]
+    output_number: int | None = None
 
 
 @dataclass(frozen=True)
@@ -44,3 +45,4 @@ class ConversionResult:
     audit_events: tuple[str, ...]
     validation_errors: tuple[str, ...]
     removed_line_numbers: tuple[int, ...] = ()
+    synthetic_rows: tuple[tuple[int, str], ...] = ()
