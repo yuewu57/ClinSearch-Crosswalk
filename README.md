@@ -4,7 +4,7 @@
 
 Part of Evidentia
 
-A deterministic, rule-based, recall-oriented converter implementing the approved v20 rules. It translates Ovid MEDLINE syntax into PubMed syntax with line-by-line audit and local validation. It is independent of generative AI and is not affiliated with or endorsed by Cochrane, Ovid, or the U.S. National Library of Medicine (NLM).
+A deterministic, rule-based, recall-oriented converter implementing the approved v21 rules. It translates Ovid MEDLINE syntax into PubMed syntax with line-by-line audit and local validation. It is independent of generative AI and is not affiliated with or endorsed by Cochrane, Ovid, or the U.S. National Library of Medicine (NLM).
 
 ## Purpose and features
 
@@ -12,9 +12,10 @@ A deterministic, rule-based, recall-oriented converter implementing the approved
 - One shared Python conversion core for web, CLI, paste, RTF, and future benchmarks.
 - Exact cache-first MeSH resolution, optional exact online lookup, and executable source-heading fallback with an audit warning.
 - Structured validation, active-query dependency analysis, and TXT/CSV/JSON/RTF downloads.
+- v21 support for Ovid `/freq=N`, ignored `limit N to ...` rows with reference-safe renumbering, and PubMed-safe wildcard phrases.
 - No accounts, database, or persistent upload storage.
 
-Exact retrieval equivalence cannot always be guaranteed. In particular, Ovid adjacency is approximated as PubMed `AND`, Ovid `.ab.` maps to PubMed `[tiab]`, and unresolved MeSH headings can use the documented source-heading fallback. A `validation_failed` or `manual_review_required` result requires attention and is not a validated query.
+Exact retrieval equivalence cannot always be guaranteed. In particular, Ovid adjacency is approximated as PubMed `AND`, Ovid `.ab.` maps to PubMed `[tiab]`, `/freq>1` and ignored LIMIT conditions are recall-broadening approximations, and unresolved MeSH headings can use the documented source-heading fallback. A `validation_failed` or `manual_review_required` result requires attention and is not a validated query.
 
 ## Supported input modes
 
@@ -22,7 +23,9 @@ Exact retrieval equivalence cannot always be guaranteed. In particular, Ovid adj
 
 Open the default **Paste strategy** tab, enter rows such as `1 exp Asthma/`, and select **Convert**. Common `1`, `1.`, and `1)` row labels are accepted; a single unnumbered expression is assigned row 1.
 
-The normal interface has no end-date field. An **External source-search end date** appears under **Advanced options** only when an eligible combined Ovid `.ed,dt.` update line is detected. This technical compatibility input controls the established v20 omission rule; it does not add a PubMed publication-date restriction. The CLI `--end-date` option remains available for automated legacy workflows.
+Automatic repair/numbering of a completely unnumbered multi-row MEDLINE strategy is deliberately **not** part of the v21 conversion ruleset. That usability feature may be added separately in the online input layer, where wrapped physical lines can be distinguished from logical search rows safely.
+
+The normal interface has no end-date field. An **External source-search end date** appears under **Advanced options** only when an eligible combined Ovid `.ed,dt.` update line is detected. This technical compatibility input controls the established omission rule; it does not add a PubMed publication-date restriction. The CLI `--end-date` option remains available for automated legacy workflows.
 
 ### RTF upload
 
@@ -66,7 +69,7 @@ python cli/batch_convert.py strategy.rtf --mesh-cache resources/mesh_resolution_
 python cli/batch_convert.py strategy.rtf --mesh-cache cache.json --online-mesh
 ```
 
-The command writes PubMed text, audit CSV, validation JSON, and (for RTF input) converted RTF. A non-OK validation exits with status 2. Cache-only mode is the default and remains suitable for frozen benchmark runs.
+The command writes PubMed text, audit CSV, validation JSON, and (for RTF input) converted RTF. A non-OK validation exits with status 2. Cache-only mode is the default and remains suitable for frozen benchmark runs. v21 does not change MeSH semantics, so the maintained v20-labelled cache remains compatible.
 
 ## Development, tests, and quality
 
@@ -95,6 +98,8 @@ Fixture `mesh_records.json` files contain synthetic identifiers for tests and mu
 
 Validation checks syntax, PubMed tags, source rows, references, cycles, and the active final-query dependency closure. Problematic unused rows remain auditable. Unsupported syntax, bounded wildcard limits, approximation flags, and unresolved cases may require manual review.
 
+For v21, a valid whole-row `limit N to ...` is intentionally reduced to its underlying row `N`; downstream references are redirected and surviving output rows are renumbered when LIMIT removal occurs. A final LIMIT row preserves its resolved base as the effective final query, using an audited synthetic final alias when required. Valid `/freq=N` is removed; `freq=1` is redundant and `freq>1` is explicitly audited as recall broadening. Safe quoted wildcard phrases are rendered using PubMed's phrase-level field-tag form rather than automatically splitting the words with Boolean `AND`.
+
 This software does not test live PubMed retrieval equivalence. Users remain responsible for peer review and retrieval testing of translated strategies.
 
 ## Deployment
@@ -116,4 +121,4 @@ Uploads are accepted as bytes, signature-checked, size-limited, processed in a c
 
 See [`CITATION.cff`](CITATION.cff). Project code is Apache-2.0; MeSH terminology remains subject to NLM terms and is not relicensed by this project. See [`NOTICE`](NOTICE).
 
-Software version: **0.1.0**. Conversion ruleset: **v20**. The v20 label identifies the conversion semantics, not the product name.
+Software version: **0.1.0**. Conversion ruleset: **v21**. The v21 label identifies the conversion semantics, not the product name.
