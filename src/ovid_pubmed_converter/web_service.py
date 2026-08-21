@@ -48,8 +48,17 @@ def user_facing_warning(warning: str) -> str:
             "looked like a complete Ovid row. Verify the reconstructed numbering and final "
             "query before retrieval."
         )
-    if "ovid_limit_line_ignored" in warning or "major_semantic_approximation" in warning:
-        return warning
+    if warning == "major_semantic_approximation_recall_broadened":
+        return (
+            "At least one Ovid construct was intentionally broadened rather than reproduced "
+            "exactly in PubMed. Check the line-by-line audit; this commonly occurs when a "
+            "LIMIT condition or /freq>1 restriction is omitted."
+        )
+    if warning.startswith("mesh_resolution_fallback_to_source_heading:"):
+        return (
+            "A controlled heading could not be confirmed by the exact MeSH resolver and an "
+            "audited fallback was used. Check the line-by-line audit."
+        )
     return warning
 
 
