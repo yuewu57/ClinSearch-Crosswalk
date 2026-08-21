@@ -1,12 +1,12 @@
-"""Shared deterministic strategy conversion API used by web and CLI."""
+"""Shared deterministic v21 strategy conversion API used by web and CLI."""
 
-from . import engine
+from . import engine_v21 as engine
 from .audit import flatten_audit
 from .models import ConversionResult, ConvertedRow, Strategy, ValidationStatus
 
 
 def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionResult:
-    """Convert a canonical strategy without UI or output-file dependencies."""
+    """Convert a canonical strategy under the approved v21 rules."""
     resolver = mesh_resolver or engine.MeshResolver(cache_path=None, mode="cache-only")
     rows = [(row.number, row.source) for row in strategy.rows]
     if not rows:
@@ -23,6 +23,33 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
 
     known = {number for number, _ in rows}
     omit_dates = strategy.end_date is not None
+
+    raw_limit_aliases = {
+        number: base
+        for number, expression in rows
+        if (base := engine.parse_ovid_limit_alias(expression)) is not None
+    }
+    invalid_limit_errors: dict[int, list[str]] = {}
+    candidate_limit_aliases: dict[int, int] = {}
+    for limit_row, base_row in raw_limit_aliases.items():
+        if base_row not in known:
+            invalid_limit_errors.setdefault(limit_row, []).append(
+                f"ovid_limit_base_reference_undefined:#{limit_row}->#{base_row}"
+            )
+        elif base_row >= limit_row:
+            invalid_limit_errors.setdefault(limit_row, []).append(
+                f"ovid_limit_base_must_reference_prior_row:#{limit_row}->#{base_row}"
+            )
+        else:
+            candidate_limit_aliases[limit_row] = base_row
+    try:
+        limit_aliases = engine.resolve_limit_aliases(candidate_limit_aliases)
+    except ValueError as exc:
+        for limit_row in candidate_limit_aliases:
+            invalid_limit_errors.setdefault(limit_row, []).append(str(exc))
+        limit_aliases = {}
+
+    # Cache-prefetch discovery remains isolated exactly as in v20.
     uncached: set[str] = set()
     discovery_resolver = engine.MeshResolver(cache_path=None, mode="cache-only")
     with engine.mesh_resolver_context(discovery_resolver):
@@ -58,6 +85,37 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
             protected_errors[number] = errors
             flags_by_line[number] = list(dict.fromkeys(flags + errors))
 
+    # A syntactically valid LIMIT command may still point at an undefined or
+    # non-prior row. Keep such a row for manual review; do not silently drop it.
+    for number, errors in invalid_limit_errors.items():
+        converted[number] = engine.MANUAL_REVIEW_ATOM
+        protected_errors[number] = []
+        retained_flags = [
+            flag
+            for flag in flags_by_line[number]
+            if not flag.startswith("ovid_limit_line_ignored_redirect_to_source_")
+            and flag != "major_semantic_approximation_recall_broadened"
+        ]
+        flags_by_line[number] = list(
+            dict.fromkeys(
+                retained_flags
+                + ["invalid_ovid_limit_alias_manual_review_required"]
+                + errors
+            )
+        )
+
+    # References to valid LIMIT rows inherit the LIMIT base before removal.
+    if limit_aliases:
+        for number in sorted(converted):
+            if number in limit_aliases or converted[number] == engine.DROP_ATOM:
+                continue
+            rewritten = engine.rewrite_hash_line_references(converted[number], limit_aliases)
+            if rewritten != converted[number]:
+                converted[number] = rewritten
+                flags_by_line[number].append("references_to_ignored_limit_rows_redirected")
+                flags_by_line[number] = list(dict.fromkeys(flags_by_line[number]))
+
+    # Existing v20 dropped-row simplification, after LIMIT redirection.
     changed = True
     while changed:
         changed = False
@@ -74,23 +132,102 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
                 changed = True
 
     dropped = {number for number, value in converted.items() if value == engine.DROP_ATOM}
-    surviving = {number: value for number, value in converted.items() if number not in dropped}
-    order = [number for number, _ in rows if number in surviving]
-    final_number = order[-1] if order else None
-    active = engine.final_query_dependency_closure(surviving, final_number)
-    line_errors: dict[int, list[str]] = {}
-    for number, converted_value in converted.items():
-        line_errors[number] = [] if number in dropped else list(
-            dict.fromkeys(
-                engine.validate_converted_expression(converted_value, allow_line_references=True)
-                + protected_errors[number]
-            )
+    surviving_source_order = [number for number, _ in rows if number not in dropped]
+
+    # Preserve v20 numbering unless valid LIMIT removal explicitly requires
+    # consecutive output renumbering.
+    renumber_due_to_limit = bool(limit_aliases)
+    if renumber_due_to_limit:
+        renumber_map = {
+            old_number: new_number
+            for new_number, old_number in enumerate(surviving_source_order, start=1)
+        }
+    else:
+        renumber_map = {number: number for number in surviving_source_order}
+
+    surviving: dict[int, str] = {}
+    for old_number in surviving_source_order:
+        new_number = renumber_map[old_number]
+        surviving[new_number] = engine.rewrite_hash_line_references(
+            converted[old_number], renumber_map
         )
+        if renumber_due_to_limit and old_number != new_number:
+            flags_by_line[old_number].append(
+                f"output_row_renumbered:#{old_number}->#{new_number}"
+            )
+            flags_by_line[old_number] = list(dict.fromkeys(flags_by_line[old_number]))
+
+    source_final = rows[-1][0]
+    synthetic_rows: list[tuple[int, str]] = []
+    synthetic_final_number: int | None = None
+    if source_final in limit_aliases:
+        effective_source = limit_aliases[source_final]
+        if effective_source not in renumber_map:
+            final_number = max(surviving) if surviving else None
+            source_level_errors = [
+                "effective_final_query_source_removed_after_limit_alias:"
+                f"#{source_final}->#{effective_source}"
+            ]
+        else:
+            target = renumber_map[effective_source]
+            source_level_errors = []
+            if surviving and max(surviving) == target:
+                final_number = target
+            else:
+                synthetic_final_number = (max(surviving) + 1) if surviving else 1
+                surviving[synthetic_final_number] = f"#{target}"
+                synthetic_rows.append((synthetic_final_number, f"#{target}"))
+                final_number = synthetic_final_number
+                flags_by_line[source_final].append(
+                    "synthetic_final_alias_after_ignored_limit:"
+                    f"#{synthetic_final_number}->#{target}"
+                )
+                flags_by_line[source_final] = list(dict.fromkeys(flags_by_line[source_final]))
+    else:
+        source_level_errors = []
+        final_number = renumber_map[surviving_source_order[-1]] if surviving_source_order else None
+
+    active = engine.final_query_dependency_closure(surviving, final_number)
+    active_source = {
+        old_number
+        for old_number, new_number in renumber_map.items()
+        if new_number in active
+    }
+
+    line_errors: dict[int, list[str]] = {}
+    for old_number in converted:
+        if old_number in dropped:
+            line_errors[old_number] = []
+        else:
+            new_number = renumber_map[old_number]
+            line_errors[old_number] = list(
+                dict.fromkeys(
+                    engine.validate_converted_expression(
+                        surviving[new_number], allow_line_references=True
+                    )
+                    + protected_errors[old_number]
+                )
+            )
 
     active_map = {number: surviving[number] for number in active if number in surviving}
-    all_errors = list(strategy.source_errors) + engine.validate_reference_graph(active_map)
-    for number in sorted(active):
-        all_errors.extend(f"line_#{number}:{error}" for error in line_errors[number])
+    all_errors = (
+        list(strategy.source_errors)
+        + source_level_errors
+        + engine.validate_reference_graph(active_map)
+    )
+    if synthetic_final_number is not None:
+        all_errors.extend(
+            f"line_#{synthetic_final_number}(synthetic_final_alias):{error}"
+            for error in engine.validate_converted_expression(
+                surviving[synthetic_final_number], allow_line_references=True
+            )
+        )
+    for old_number in sorted(active_source):
+        new_number = renumber_map[old_number]
+        all_errors.extend(
+            f"line_#{new_number}(source_#{old_number}):{error}"
+            for error in line_errors[old_number]
+        )
     if final_number is None:
         all_errors.append("final_query_empty_after_short_root_cleanup")
     all_errors = list(dict.fromkeys(all_errors))
@@ -103,25 +240,40 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
         status = ValidationStatus.OK
 
     converted_rows = []
-    for number, _expression in rows:
-        if number in dropped:
-            row_status = "removed_after_short_root_cleanup"
+    for old_number, _expression in rows:
+        if old_number in dropped:
+            if old_number in limit_aliases:
+                row_status = "removed_ignored_ovid_limit"
+            elif (
+                "ovid_ed_dt_update_line_omitted_external_end_date_applied"
+                in flags_by_line[old_number]
+            ):
+                row_status = "removed_ignored_ovid_update_date"
+            else:
+                row_status = "removed_after_short_root_cleanup"
             rendered = ""
             errors = ()
+            output_number = None
         else:
-            errors = tuple(line_errors[number])
+            errors = tuple(line_errors[old_number])
             row_status = (
-                "ok" if not errors else "validation_failed" if number in active else "warning_unused_line"
+                "ok"
+                if not errors
+                else "validation_failed"
+                if old_number in active_source
+                else "warning_unused_line"
             )
-            rendered = converted[number]
+            output_number = renumber_map[old_number]
+            rendered = surviving[output_number]
         converted_rows.append(
             ConvertedRow(
-                number,
-                originals[number],
+                old_number,
+                originals[old_number],
                 rendered,
-                tuple(flags_by_line[number]),
+                tuple(flags_by_line[old_number]),
                 row_status,
                 errors,
+                output_number=output_number,
             )
         )
 
@@ -139,4 +291,5 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
         flatten_audit(flags_by_line),
         tuple(all_errors),
         tuple(sorted(dropped)),
+        synthetic_rows=tuple(synthetic_rows),
     )
