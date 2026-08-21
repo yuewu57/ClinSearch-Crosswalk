@@ -13,4 +13,4 @@ __all__ = [
     "parse_strategy_text",
 ]
 __version__ = "0.1.0"
-RULESET_VERSION = "v20"
+RULESET_VERSION = "v21"

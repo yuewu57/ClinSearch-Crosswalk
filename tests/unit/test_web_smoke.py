@@ -13,7 +13,6 @@ from ovid_pubmed_converter.web_service import (
     user_facing_validation_error,
 )
 
-
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "01_basic_mesh"
 APP_PATH = Path(__file__).parents[2] / "web" / "app.py"
 

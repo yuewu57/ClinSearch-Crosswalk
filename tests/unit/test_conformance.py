@@ -13,7 +13,9 @@ def test_generic_publication_type_is_audited():
 
 def test_verified_mesh_rename_exempts_protected_hyphen_check():
     errors = engine.validate_protected_hyphenated_terms(
-        "Double-Blind Method/", '"Double Blind Method"[mh]', ["mesh_resolved:Double-Blind Method=>Double Blind Method"]
+        "Double-Blind Method/",
+        '"Double Blind Method"[mh]',
+        ["mesh_resolved:Double-Blind Method=>Double Blind Method"],
     )
     assert errors == []
 
@@ -55,7 +57,10 @@ def test_invalid_rtf_signature_rejected():
 def test_manual_review_when_final_query_removed():
     strategy = Strategy((StrategyRow(1, "ab*.tw."),))
     result = convert_strategy(strategy)
-    assert result.validation_status in {ValidationStatus.MANUAL_REVIEW_REQUIRED, ValidationStatus.OK}
+    assert result.validation_status in {
+        ValidationStatus.MANUAL_REVIEW_REQUIRED,
+        ValidationStatus.OK,
+    }
 
 
 def test_end_date_does_not_change_an_ordinary_strategy():
@@ -75,5 +80,5 @@ def test_end_date_only_applies_documented_ed_dt_cleanup():
     with_end_date = convert_strategy(parse_strategy_text(source, end_date="31-12-2025"))
 
     assert without_end_date.rows[1].converted
-    assert with_end_date.rows[1].validation_status == "removed_after_short_root_cleanup"
+    assert with_end_date.rows[1].validation_status == "removed_ignored_ovid_update_date"
     assert with_end_date.final_query == "#1"
