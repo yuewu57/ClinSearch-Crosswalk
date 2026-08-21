@@ -8,6 +8,7 @@ from ovid_pubmed_converter.mesh import load_mesh_resolver, production_cache_path
 from ovid_pubmed_converter.outputs import (
     audit_csv,
     converted_rtf,
+    one_line_query,
     strategy_text,
     validation_report,
 )
@@ -88,7 +89,9 @@ def convert_rtf(data: bytes, *, resolver=None):
 
 
 def download_payloads(result, *, include_rtf: bool = False) -> dict[str, bytes]:
+    query = one_line_query(result)
     payloads = {
+        "pubmed_query.txt": ((query + "\n") if query else "").encode("utf-8"),
         "pubmed_strategy.txt": strategy_text(result).encode("utf-8"),
         "pubmed_audit.csv": audit_csv(result).encode("utf-8"),
         "pubmed_validation.json": validation_report(result).encode("utf-8"),
