@@ -5,7 +5,7 @@ import io
 import json
 import re
 
-from .engine import _escape_text_for_rtf, validate_converted_expression
+from . import engine
 from .models import ConversionResult, ValidationStatus
 
 
@@ -83,7 +83,7 @@ def one_line_query(result: ConversionResult) -> str:
         return resolved
 
     query = resolve(final_line)
-    local_errors = validate_converted_expression(query, allow_line_references=False)
+    local_errors = engine.validate_converted_expression(query, allow_line_references=False)
     if local_errors:
         raise ValueError("one_line_query_validation_failed:" + ";".join(local_errors))
     if _contains_reference_outside_quotes(query):
@@ -144,5 +144,5 @@ def validation_report(result: ConversionResult) -> str:
 
 def converted_rtf(result: ConversionResult) -> bytes:
     body = "PubMed:\n" + strategy_text(result)
-    text = "{\\rtf1\\ansi\\ansicpg1252\\uc1\n" + _escape_text_for_rtf(body) + "\n}"
+    text = "{\\rtf1\\ansi\\ansicpg1252\\uc1\n" + engine._escape_text_for_rtf(body) + "\n}"
     return text.encode("ascii")
