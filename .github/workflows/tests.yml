@@ -14,4 +14,4 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -r requirements-dev.txt
       - run: pytest --cov=ovid_pubmed_converter --cov-report=term-missing
-      - run: ruff check . --fix --diff
+      - run: ruff check .
