@@ -1,6 +1,6 @@
 from ovid_pubmed_converter.core import convert_strategy
 from ovid_pubmed_converter.models import ValidationStatus
-from ovid_pubmed_converter.outputs import strategy_text
+from ovid_pubmed_converter.outputs import one_line_query, strategy_text
 from ovid_pubmed_converter.parser import parse_strategy_text
 
 
@@ -23,6 +23,7 @@ def test_malformed_freq_requires_review_when_active():
     result = convert_strategy(parse_strategy_text("1 cancer.ab./freq=x"))
     assert result.validation_status is ValidationStatus.VALIDATION_FAILED
     assert any("manual_review_required_marker" in error for error in result.validation_errors)
+    assert one_line_query(result) == ""
 
 
 def test_limit_row_is_removed_redirected_and_renumbered():
@@ -40,6 +41,9 @@ def test_limit_row_is_removed_redirected_and_renumbered():
         "#4 cancer[tw]",
         "#5 #3 AND #4",
     ]
+    assert one_line_query(result) == (
+        "((asthma[tw]) OR (wheeze[tw])) AND (cancer[tw])"
+    )
 
 
 def test_final_limit_preserves_effective_query_with_synthetic_alias():
@@ -50,6 +54,23 @@ def test_final_limit_preserves_effective_query_with_synthetic_alias():
     assert result.final_query == "#1"
     assert result.synthetic_rows == ((3, "#1"),)
     assert strategy_text(result).splitlines()[-1] == "#3 #1"
+    assert one_line_query(result) == "asthma[tw]"
+
+
+def test_one_line_query_recursively_expands_only_final_dependencies():
+    source = (
+        "1 asthma.tw.\n"
+        "2 wheeze.tw.\n"
+        "3 1 or 2\n"
+        "4 unusedterm.tw.\n"
+        "5 3 and 1"
+    )
+    result = convert_strategy(parse_strategy_text(source))
+    assert result.validation_status is ValidationStatus.OK
+    query = one_line_query(result)
+    assert query == "((asthma[tw]) OR (wheeze[tw])) AND (asthma[tw])"
+    assert "unusedterm" not in query
+    assert "#" not in query
 
 
 def test_invalid_unused_limit_is_warning_not_file_failure():
@@ -58,12 +79,14 @@ def test_invalid_unused_limit_is_warning_not_file_failure():
     assert result.validation_status is ValidationStatus.OK
     assert result.rows[1].validation_status == "warning_unused_line"
     assert "major_semantic_approximation_recall_broadened" not in result.rows[1].audit_flags
+    assert one_line_query(result) == "cancer[tw]"
 
 
 def test_invalid_active_limit_fails():
     source = "1 asthma.tw.\n2 limit 99 to humans\n3 1 or 2"
     result = convert_strategy(parse_strategy_text(source))
     assert result.validation_status is ValidationStatus.VALIDATION_FAILED
+    assert one_line_query(result) == ""
 
 
 def test_wildcard_phrase_dequotes_after_tag_canonicalisation():
@@ -93,3 +116,4 @@ def test_ed_dt_omission_alone_does_not_trigger_v21_renumbering():
         "#3 cancer[tw]",
         "#4 #1 AND #3",
     ]
+    assert one_line_query(result) == "(asthma[tw]) AND (cancer[tw])"
