@@ -209,14 +209,23 @@ if result is not None:
     include_rtf = st.session_state.get("conversion_was_rtf", False)
     payloads = download_payloads(result, include_rtf=include_rtf)
 
-    st.header("PubMed strategy")
+    st.header("One-line PubMed query")
+    query = payloads["pubmed_query.txt"].decode("utf-8").strip()
+    st.code(query or "No executable one-line query", language=None)
+    if query:
+        st.caption(
+            "Copy this fully expanded query into PubMed. It contains no Evidentia line "
+            "references; review any conversion warnings and apply relevant PubMed filters "
+            "before retrieval."
+        )
+
+    st.header("Numbered PubMed strategy")
     output = payloads["pubmed_strategy.txt"].decode("utf-8")
     st.code(output, language=None)
-    st.caption("Use the copy control in the code block to copy the full strategy.")
-
-    st.header("Final query")
-    st.code(result.final_query or "No executable final query", language=None)
-    st.caption("Use the copy control in the code block to copy the final query.")
+    st.caption(
+        "This numbered representation is retained for audit and troubleshooting. "
+        "The one-line query above recursively expands the final row's referenced lines."
+    )
 
     st.header("Validation")
     if result.validation_status.value == "ok":
@@ -247,20 +256,26 @@ if result is not None:
                 st.write(f"- {flag}")
 
     st.header("Downloads")
-    left, middle, right = st.columns(3)
-    left.download_button(
-        "TXT",
+    query_col, strategy_col, audit_col, validation_col = st.columns(4)
+    query_col.download_button(
+        "One-line query",
+        payloads["pubmed_query.txt"],
+        "pubmed_query.txt",
+        "text/plain",
+    )
+    strategy_col.download_button(
+        "Numbered strategy",
         payloads["pubmed_strategy.txt"],
         "pubmed_strategy.txt",
         "text/plain",
     )
-    middle.download_button(
+    audit_col.download_button(
         "Audit CSV",
         payloads["pubmed_audit.csv"],
         "pubmed_audit.csv",
         "text/csv",
     )
-    right.download_button(
+    validation_col.download_button(
         "Validation report",
         payloads["pubmed_validation.json"],
         "pubmed_validation.json",
