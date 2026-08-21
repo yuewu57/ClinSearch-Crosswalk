@@ -9,15 +9,40 @@ from .models import ConversionResult
 
 
 def strategy_text(result: ConversionResult) -> str:
-    return "\n".join(f"#{row.number} {row.converted}" for row in result.rows if row.converted) + "\n"
+    rows = [
+        (row.output_number if row.output_number is not None else row.number, row.converted)
+        for row in result.rows
+        if row.converted
+    ]
+    rows.extend(result.synthetic_rows)
+    rows.sort(key=lambda item: item[0])
+    return "\n".join(f"#{number} {converted}" for number, converted in rows) + "\n"
 
 
 def audit_csv(result: ConversionResult) -> str:
     stream = io.StringIO(newline="")
     writer = csv.writer(stream)
-    writer.writerow(["line_number", "original", "converted", "flags", "validation_status", "validation_errors"])
+    writer.writerow(
+        [
+            "line_number",
+            "original",
+            "converted",
+            "flags",
+            "validation_status",
+            "validation_errors",
+        ]
+    )
     for row in result.rows:
-        writer.writerow([row.number, row.original, row.converted, "; ".join(row.audit_flags), row.validation_status, "; ".join(row.validation_errors)])
+        writer.writerow(
+            [
+                row.number,
+                row.original,
+                row.converted,
+                "; ".join(row.audit_flags),
+                row.validation_status,
+                "; ".join(row.validation_errors),
+            ]
+        )
     return stream.getvalue()
 
 
@@ -33,4 +58,5 @@ def validation_report(result: ConversionResult) -> str:
 
 def converted_rtf(result: ConversionResult) -> bytes:
     body = "PubMed:\n" + strategy_text(result)
-    return ("{\\rtf1\\ansi\\ansicpg1252\\uc1\n" + _escape_text_for_rtf(body) + "\n}").encode("ascii")
+    text = "{\\rtf1\\ansi\\ansicpg1252\\uc1\n" + _escape_text_for_rtf(body) + "\n}"
+    return text.encode("ascii")
