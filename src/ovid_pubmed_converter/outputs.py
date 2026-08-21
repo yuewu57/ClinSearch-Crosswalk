@@ -50,6 +50,7 @@ def validation_report(result: ConversionResult) -> str:
     payload = {
         "status": result.validation_status.value,
         "final_line": result.final_line_number,
+        "warnings": result.warnings,
         "errors": result.validation_errors,
         "note": "A validation/manual-review failure must not be submitted to PubMed.",
     }
