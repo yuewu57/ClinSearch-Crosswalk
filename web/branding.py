@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-
 BRAND_ASSET_DIRECTORY = Path(__file__).resolve().parents[1] / "assets" / "brand"
 QUE2_LOGO_PATH = BRAND_ASSET_DIRECTORY / "Que2_brand.png"
 STRATHCLYDE_LOGO_PATH = BRAND_ASSET_DIRECTORY / "strath_brand.jpg"
