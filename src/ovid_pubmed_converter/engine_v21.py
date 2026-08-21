@@ -7,9 +7,20 @@ and PubMed wildcard-phrase dequoting after v20 canonicalisation.
 
 import re
 
-from .engine import *  # noqa: F403
-from .engine import _escape_text_for_rtf
-from .engine import convert_line as _convert_line_v20
+from .engine import (
+    DROP_ATOM,
+    MANUAL_REVIEW_ATOM,
+    MeshResolver,
+    convert_line as _convert_line_v20,
+    final_query_dependency_closure,
+    mesh_resolver_context,
+    normalize_unicode,
+    simplify_dropped_line_references,
+    tidy_spaces,
+    validate_converted_expression,
+    validate_protected_hyphenated_terms,
+    validate_reference_graph,
+)
 
 OUTPUT_VERSION = "v21"
 # MeSH semantics did not change in v21; reuse the maintained v20 cache.
@@ -24,15 +35,15 @@ def strip_ovid_frequency_requirement(line: str):
     review so it cannot drift into quoted free text.
     """
     flags: list[str] = []
-    normalized = normalize_unicode(line).strip()  # noqa: F405
+    normalized = normalize_unicode(line).strip()
     match = re.fullmatch(
         r"(?P<base>.+?)\s*/\s*freq\s*=\s*(?P<n>\d+)\s*",
         normalized,
-        flags=re.I,
+        flags=re.IGNORECASE,
     )
     if match is not None:
         n = int(match.group("n"))
-        base = tidy_spaces(match.group("base"))  # noqa: F405
+        base = tidy_spaces(match.group("base"))
         if n >= 1 and base:
             if n == 1:
                 flags.append("ovid_frequency_constraint_removed_as_redundant:freq=1")
@@ -41,11 +52,11 @@ def strip_ovid_frequency_requirement(line: str):
                 flags.append("major_semantic_approximation_recall_broadened")
             return base, flags
         flags.append(f"invalid_ovid_frequency_constraint_manual_review_required:freq={n}")
-        return MANUAL_REVIEW_ATOM, flags  # noqa: F405
+        return MANUAL_REVIEW_ATOM, flags
 
-    if re.search(r"/\s*freq\b", normalized, flags=re.I):
+    if re.search(r"/\s*freq\b", normalized, flags=re.IGNORECASE):
         flags.append("malformed_or_unsupported_ovid_frequency_constraint_manual_review_required")
-        return MANUAL_REVIEW_ATOM, flags  # noqa: F405
+        return MANUAL_REVIEW_ATOM, flags
     return normalized, flags
 
 
@@ -53,22 +64,25 @@ def parse_ovid_limit_alias(line: str) -> int | None:
     """Return the source row referenced by a complete ``limit N to ...`` row."""
     match = re.fullmatch(
         r"\s*limit\s+#?(?P<base>\d+)\s+to\s+(?P<condition>\S(?:.*\S)?)\s*",
-        normalize_unicode(line),  # noqa: F405
-        flags=re.I,
+        normalize_unicode(line),
+        flags=re.IGNORECASE,
     )
     return int(match.group("base")) if match else None
 
 
 def is_ovid_limit_like_line(line: str) -> bool:
-    return re.match(r"\s*limit\b", normalize_unicode(line), flags=re.I) is not None  # noqa: F405
+    return (
+        re.match(r"\s*limit\b", normalize_unicode(line), flags=re.IGNORECASE)
+        is not None
+    )
 
 
 def resolve_limit_aliases(limit_aliases: dict[int, int]) -> dict[int, int]:
     """Resolve chained LIMIT aliases conservatively."""
     resolved: dict[int, int] = {}
-    for source in limit_aliases:
+    for source, initial_target in limit_aliases.items():
         seen: set[int] = {source}
-        target = limit_aliases[source]
+        target = initial_target
         while target in limit_aliases:
             if target in seen:
                 raise ValueError(f"circular_ovid_limit_alias_at_#{source}")
@@ -100,7 +114,7 @@ def dequote_wildcard_fielded_phrases(line: str):
     flags: list[str] = []
     pattern = re.compile(
         r'"(?P<phrase>[^"\n]*\*[^"\n]*)"\[(?P<tag>ti|tiab|tw|all|ta)\]',
-        flags=re.I,
+        flags=re.IGNORECASE,
     )
 
     def repl(match: re.Match) -> str:
@@ -108,7 +122,11 @@ def dequote_wildcard_fielded_phrases(line: str):
         if not phrase or " " not in phrase:
             return match.group(0)
         tag = match.group("tag").lower()
-        boolean_token = re.search(r"\b(AND|OR|NOT)\b", phrase, flags=re.I)
+        boolean_token = re.search(
+            r"\b(AND|OR|NOT)\b",
+            phrase,
+            flags=re.IGNORECASE,
+        )
         if boolean_token is not None:
             flags.append(
                 "wildcard_phrase_quotes_retained_due_literal_boolean_token:"
@@ -128,21 +146,21 @@ def convert_line(
     omit_ovid_update_dates: bool = False,
 ):
     """Apply v21 pre/post-processing around the frozen v20 line converter."""
-    line = normalize_unicode(expr.strip())  # noqa: F405
+    line = normalize_unicode(expr.strip())
 
     limit_base = parse_ovid_limit_alias(line)
     if limit_base is not None:
-        return DROP_ATOM, [  # noqa: F405
+        return DROP_ATOM, [
             f"ovid_limit_line_ignored_redirect_to_source_#{limit_base}",
             "major_semantic_approximation_recall_broadened",
         ]
     if is_ovid_limit_like_line(line):
-        return MANUAL_REVIEW_ATOM, [  # noqa: F405
+        return MANUAL_REVIEW_ATOM, [
             "malformed_or_unsupported_ovid_limit_line_manual_review_required"
         ]
 
     line, frequency_flags = strip_ovid_frequency_requirement(line)
-    if line == MANUAL_REVIEW_ATOM:  # noqa: F405
+    if line == MANUAL_REVIEW_ATOM:
         return line, frequency_flags
 
     converted, flags = _convert_line_v20(
