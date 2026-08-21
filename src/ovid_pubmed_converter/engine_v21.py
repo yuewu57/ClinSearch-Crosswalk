@@ -10,17 +10,10 @@ import re
 from .engine import (
     DROP_ATOM,
     MANUAL_REVIEW_ATOM,
-    MeshResolver,
-    convert_line as _convert_line_v20,
-    final_query_dependency_closure,
-    mesh_resolver_context,
     normalize_unicode,
-    simplify_dropped_line_references,
     tidy_spaces,
-    validate_converted_expression,
-    validate_protected_hyphenated_terms,
-    validate_reference_graph,
 )
+from .engine import convert_line as _convert_line_v20
 
 OUTPUT_VERSION = "v21"
 # MeSH semantics did not change in v21; reuse the maintained v20 cache.
