@@ -23,6 +23,19 @@ def _rendered_strategy_map(result: ConversionResult) -> dict[int, str]:
     return rows
 
 
+def _replace_references_outside_quotes(expression: str, replacement) -> str:
+    """Replace ``#N`` line references only outside double-quoted PubMed text."""
+    parts = re.split(r'("[^"]*")', expression)
+    for index in range(0, len(parts), 2):
+        parts[index] = _LINE_REFERENCE_RE.sub(replacement, parts[index])
+    return "".join(parts)
+
+
+def _contains_reference_outside_quotes(expression: str) -> bool:
+    parts = re.split(r'("[^"]*")', expression)
+    return any(_LINE_REFERENCE_RE.search(parts[index]) for index in range(0, len(parts), 2))
+
+
 def one_line_query(result: ConversionResult) -> str:
     """Resolve the validated final PubMed row recursively into one executable query.
 
@@ -30,6 +43,7 @@ def one_line_query(result: ConversionResult) -> str:
     converted rows are deliberately excluded. Every substituted line reference
     is parenthesized so Boolean precedence is preserved. A sole-reference alias
     resolves directly to its target to avoid unnecessary wrapper parentheses.
+    References inside quoted PubMed text are never interpreted as row links.
     """
     if result.validation_status is not ValidationStatus.OK:
         return ""
@@ -63,7 +77,7 @@ def one_line_query(result: ConversionResult) -> str:
             reference = int(match.group("number"))
             return f"({resolve(reference, stack + (number,))})"
 
-        resolved = _LINE_REFERENCE_RE.sub(replace_reference, expression)
+        resolved = _replace_references_outside_quotes(expression, replace_reference)
         resolved = re.sub(r"\s+", " ", resolved).strip()
         memo[number] = resolved
         return resolved
@@ -72,7 +86,7 @@ def one_line_query(result: ConversionResult) -> str:
     local_errors = validate_converted_expression(query, allow_line_references=False)
     if local_errors:
         raise ValueError("one_line_query_validation_failed:" + ";".join(local_errors))
-    if _LINE_REFERENCE_RE.search(query):
+    if _contains_reference_outside_quotes(query):
         raise ValueError("one_line_query_contains_unresolved_reference")
     return query
 
