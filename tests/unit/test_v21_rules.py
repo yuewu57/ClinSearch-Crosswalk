@@ -26,15 +26,9 @@ def test_malformed_freq_requires_review_when_active():
 
 
 def test_limit_row_is_removed_redirected_and_renumbered():
-    source = "\n".join(
-        [
-            "1 asthma.tw.",
-            "2 wheeze.tw.",
-            "3 1 or 2",
-            "4 limit 3 to humans",
-            "5 cancer.tw.",
-            "6 4 and 5",
-        ]
+    source = (
+        "1 asthma.tw.\n2 wheeze.tw.\n3 1 or 2\n4 limit 3 to humans\n"
+        "5 cancer.tw.\n6 4 and 5"
     )
     result = convert_strategy(parse_strategy_text(source))
     assert result.validation_status is ValidationStatus.OK
