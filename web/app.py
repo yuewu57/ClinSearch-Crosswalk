@@ -209,23 +209,23 @@ if result is not None:
     include_rtf = st.session_state.get("conversion_was_rtf", False)
     payloads = download_payloads(result, include_rtf=include_rtf)
 
-    st.header("One-line PubMed query")
+    st.header("Full-line PubMed conversion")
+    output = payloads["pubmed_strategy.txt"].decode("utf-8")
+    st.code(output, language=None)
+    st.caption(
+        "Use this full line-by-line conversion if you want to retain the translated search-set "
+        "structure and line references."
+    )
+
+    st.header("One-line PubMed conversion")
     query = payloads["pubmed_query.txt"].decode("utf-8").strip()
     st.code(query or "No executable one-line query", language=None)
     if query:
         st.caption(
-            "Copy this fully expanded query into PubMed. It contains no Evidentia line "
-            "references; review any conversion warnings and apply relevant PubMed filters "
-            "before retrieval."
+            "Use this fully expanded version if you want a single copy-ready PubMed query. "
+            "It contains no Evidentia line references; review any conversion warnings and "
+            "apply relevant PubMed filters before retrieval."
         )
-
-    st.header("Numbered PubMed strategy")
-    output = payloads["pubmed_strategy.txt"].decode("utf-8")
-    st.code(output, language=None)
-    st.caption(
-        "This numbered representation is retained for audit and troubleshooting. "
-        "The one-line query above recursively expands the final row's referenced lines."
-    )
 
     st.header("Validation")
     if result.validation_status.value == "ok":
@@ -256,17 +256,17 @@ if result is not None:
                 st.write(f"- {flag}")
 
     st.header("Downloads")
-    query_col, strategy_col, audit_col, validation_col = st.columns(4)
-    query_col.download_button(
-        "One-line query",
-        payloads["pubmed_query.txt"],
-        "pubmed_query.txt",
-        "text/plain",
-    )
+    strategy_col, query_col, audit_col, validation_col = st.columns(4)
     strategy_col.download_button(
-        "Numbered strategy",
+        "Full-line conversion",
         payloads["pubmed_strategy.txt"],
         "pubmed_strategy.txt",
+        "text/plain",
+    )
+    query_col.download_button(
+        "One-line conversion",
+        payloads["pubmed_query.txt"],
+        "pubmed_query.txt",
         "text/plain",
     )
     audit_col.download_button(
