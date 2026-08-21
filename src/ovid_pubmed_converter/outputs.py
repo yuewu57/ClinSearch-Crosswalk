@@ -5,8 +5,8 @@ import io
 import json
 import re
 
-from . import engine
 from .models import ConversionResult, ValidationStatus
+from . import engine
 
 
 _LINE_REFERENCE_RE = re.compile(r"#(?P<number>\d+)\b")
