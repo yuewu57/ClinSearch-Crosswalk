@@ -11,6 +11,7 @@ from ovid_pubmed_converter.web_service import (
     download_payloads,
     has_eligible_update_date_construct,
     user_facing_validation_error,
+    user_facing_warning,
 )
 
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "01_basic_mesh"
@@ -39,6 +40,7 @@ def test_web_paste_rtf_and_download_smoke():
     assert payloads["pubmed_strategy.txt"] == b'#1 "Asthma"[mh]\n'
     assert b"line_number,original,converted" in payloads["pubmed_audit.csv"]
     assert b'"status": "ok"' in payloads["pubmed_validation.json"]
+    assert b'"warnings":' in payloads["pubmed_validation.json"]
     assert payloads["pubmed_strategy.rtf"].startswith(b"{\\rtf1")
 
 
@@ -89,6 +91,31 @@ def test_rtf_template_matches_equivalent_paste_strategy():
     assert [row.converted for row in paste.rows] == [row.converted for row in rtf.rows]
 
 
+def test_unnumbered_medline_rtf_is_recovered_by_paragraph_order():
+    data = b"{\\rtf1\\ansi Medline:\\par exp Asthma/\\par asthma.tw.\\par 1 or 2}"
+    result = convert_rtf(data, resolver=fixture_resolver())
+
+    assert result.validation_status is ValidationStatus.OK
+    assert result.final_query == "#1 OR #2"
+    assert [row.number for row in result.rows] == [1, 2, 3]
+    assert "rtf_line_numbers_recovered_from_medline_paragraph_order" in result.warnings
+    assert "Verify the reconstructed numbering" in user_facing_warning(result.warnings[-1])
+
+
+def test_ambiguous_unnumbered_medline_rtf_is_rejected():
+    data = (
+        b"{\\rtf1\\ansi Medline:\\par exp Asthma/\\par "
+        b"wrapped continuation without an Ovid field\\par 1 or 2}"
+    )
+    result = convert_rtf(data, resolver=fixture_resolver())
+
+    assert result.validation_status is ValidationStatus.VALIDATION_FAILED
+    assert result.validation_errors == ("rtf_medline_block_missing_reliable_line_numbers",)
+    message = user_facing_validation_error(result.validation_errors[0])
+    assert "line numbers were missing" in message
+    assert "could not be identified safely" in message
+
+
 def test_end_date_advanced_option_detection_is_specific_to_ed_dt():
     assert not has_eligible_update_date_construct("1 asthma.tw.")
     assert not has_eligible_update_date_construct("1 asthma.tw. or 2025.ed,dt.")
@@ -99,7 +126,6 @@ def test_ambiguous_standalone_rtf_has_clear_user_error():
     result = convert_rtf(b"{\\rtf1\\ansi arbitrary report text}", resolver=fixture_resolver())
 
     assert result.validation_status is ValidationStatus.VALIDATION_FAILED
-    assert user_facing_validation_error(result.validation_errors[0]) == (
-        'No explicit "Medline:" section or unique coherent numbered Ovid strategy '
-        "could be identified in the RTF."
-    )
+    message = user_facing_validation_error(result.validation_errors[0])
+    assert 'No explicit "Medline:" section' in message
+    assert "re-export" in message.lower()
