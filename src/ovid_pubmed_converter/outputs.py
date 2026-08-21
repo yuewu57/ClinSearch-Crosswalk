@@ -8,7 +8,6 @@ import re
 from . import engine
 from .models import ConversionResult, ValidationStatus
 
-
 _LINE_REFERENCE_RE = re.compile(r"#(?P<number>\d+)\b")
 
 
