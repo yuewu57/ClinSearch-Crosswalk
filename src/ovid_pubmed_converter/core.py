@@ -165,8 +165,10 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
         if effective_source not in renumber_map:
             final_number = max(surviving) if surviving else None
             source_level_errors = [
-                "effective_final_query_source_removed_after_limit_alias:"
-                f"#{source_final}->#{effective_source}"
+                (
+                    "effective_final_query_source_removed_after_limit_alias:"
+                    f"#{source_final}->#{effective_source}"
+                )
             ]
         else:
             target = renumber_map[effective_source]
