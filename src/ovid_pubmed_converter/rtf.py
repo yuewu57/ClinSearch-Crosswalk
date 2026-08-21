@@ -9,7 +9,14 @@ from .models import Strategy, StrategyRow
 
 MAX_RTF_BYTES = 2 * 1024 * 1024
 
-_NUMBERED_ROW_RE = re.compile(r"^\s*\d+(?:[.)]\s*|\s+\S)")
+# A punctuated label (``1.`` / ``1)``) is explicit. For a plain label such as
+# ``1 asthma.tw.``, the text after the integer must not begin with a Boolean
+# operator; otherwise a genuine unnumbered expression such as ``1 or 2`` would
+# be misclassified as a visible row label.
+_NUMBERED_ROW_RE = re.compile(
+    r"^\s*\d+(?:[.)](?:\s*.*)?|\s+(?!(?:and|or|not)\b)\S)",
+    flags=re.IGNORECASE,
+)
 _FIELD_SUFFIX_RE = re.compile(
     r"\.[A-Za-z][A-Za-z0-9]*(?:\s*,\s*[A-Za-z][A-Za-z0-9]*)*\.\s*$",
     flags=re.IGNORECASE,
