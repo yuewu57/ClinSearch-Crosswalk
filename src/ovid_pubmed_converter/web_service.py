@@ -1,5 +1,7 @@
 """Testable web workflow functions without Streamlit dependencies."""
 
+from dataclasses import replace
+
 from ovid_pubmed_converter import engine
 from ovid_pubmed_converter.core import convert_strategy
 from ovid_pubmed_converter.mesh import load_mesh_resolver, production_cache_path
@@ -24,9 +26,31 @@ def user_facing_validation_error(error: str) -> str:
     if error == "standalone_rtf_strategy_not_unambiguously_identified":
         return (
             'No explicit "Medline:" section or unique coherent numbered Ovid '
-            "strategy could be identified in the RTF."
+            "strategy could be identified in the RTF. Re-export the Ovid strategy "
+            "with line numbers, use the example RTF template, or paste the strategy instead."
+        )
+    if error == "rtf_medline_block_missing_reliable_line_numbers":
+        return (
+            'A "Medline:" section was found, but strategy line numbers were missing and '
+            "the extracted paragraphs could not be identified safely as complete Ovid rows. "
+            "Re-export with line numbers, use the example RTF template, or paste one logical "
+            "search row per line."
         )
     return error
+
+
+def user_facing_warning(warning: str) -> str:
+    """Render high-value web warnings in plain language."""
+    if warning == "rtf_line_numbers_recovered_from_medline_paragraph_order":
+        return (
+            "The uploaded RTF had a Medline section but no visible strategy line numbers. "
+            "Evidentia assigned line numbers by paragraph order because every paragraph "
+            "looked like a complete Ovid row. Verify the reconstructed numbering and final "
+            "query before retrieval."
+        )
+    if "ovid_limit_line_ignored" in warning or "major_semantic_approximation" in warning:
+        return warning
+    return warning
 
 
 def web_resolver():
@@ -45,7 +69,13 @@ def convert_paste(text: str, end_date: str | None = None, *, resolver=None):
 
 def convert_rtf(data: bytes, *, resolver=None):
     strategy = parse_rtf_bytes(data)
-    return convert_strategy(strategy, mesh_resolver=resolver or web_resolver())
+    result = convert_strategy(strategy, mesh_resolver=resolver or web_resolver())
+    input_warnings = tuple(strategy.metadata.get("input_warnings", ()) or ())
+    if not input_warnings:
+        return result
+    warnings = tuple(dict.fromkeys(result.warnings + input_warnings))
+    audit_events = tuple(dict.fromkeys(result.audit_events + input_warnings))
+    return replace(result, warnings=warnings, audit_events=audit_events)
 
 
 def download_payloads(result, *, include_rtf: bool = False) -> dict[str, bytes]:
