@@ -1,13 +1,14 @@
 """Shared deterministic v21 strategy conversion API used by web and CLI."""
 
-from . import engine_v21 as engine
+from . import engine as base_engine
+from . import engine_v21
 from .audit import flatten_audit
 from .models import ConversionResult, ConvertedRow, Strategy, ValidationStatus
 
 
 def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionResult:
     """Convert a canonical strategy under the approved v21 rules."""
-    resolver = mesh_resolver or engine.MeshResolver(cache_path=None, mode="cache-only")
+    resolver = mesh_resolver or base_engine.MeshResolver(cache_path=None, mode="cache-only")
     rows = [(row.number, row.source) for row in strategy.rows]
     if not rows:
         errors = strategy.source_errors or ("no_strategy_rows",)
@@ -27,7 +28,7 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
     raw_limit_aliases = {
         number: base
         for number, expression in rows
-        if (base := engine.parse_ovid_limit_alias(expression)) is not None
+        if (base := engine_v21.parse_ovid_limit_alias(expression)) is not None
     }
     invalid_limit_errors: dict[int, list[str]] = {}
     candidate_limit_aliases: dict[int, int] = {}
@@ -43,7 +44,7 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
         else:
             candidate_limit_aliases[limit_row] = base_row
     try:
-        limit_aliases = engine.resolve_limit_aliases(candidate_limit_aliases)
+        limit_aliases = engine_v21.resolve_limit_aliases(candidate_limit_aliases)
     except ValueError as exc:
         for limit_row in candidate_limit_aliases:
             invalid_limit_errors.setdefault(limit_row, []).append(str(exc))
@@ -51,11 +52,11 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
 
     # Cache-prefetch discovery remains isolated exactly as in v20.
     uncached: set[str] = set()
-    discovery_resolver = engine.MeshResolver(cache_path=None, mode="cache-only")
-    with engine.mesh_resolver_context(discovery_resolver):
+    discovery_resolver = base_engine.MeshResolver(cache_path=None, mode="cache-only")
+    with base_engine.mesh_resolver_context(discovery_resolver):
         prefix = "mesh_resolution_fallback_to_source_heading:"
         for _number, expression in rows:
-            _converted, flags = engine.convert_line(
+            _converted, flags = engine_v21.convert_line(
                 expression,
                 known_line_numbers=known,
                 omit_ovid_update_dates=omit_dates,
@@ -72,14 +73,14 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
     originals: dict[int, str] = {}
     flags_by_line: dict[int, list[str]] = {}
     protected_errors: dict[int, list[str]] = {}
-    with engine.mesh_resolver_context(resolver):
+    with base_engine.mesh_resolver_context(resolver):
         for number, expression in rows:
-            output, flags = engine.convert_line(
+            output, flags = engine_v21.convert_line(
                 expression,
                 known_line_numbers=known,
                 omit_ovid_update_dates=omit_dates,
             )
-            errors = engine.validate_protected_hyphenated_terms(expression, output, flags)
+            errors = base_engine.validate_protected_hyphenated_terms(expression, output, flags)
             converted[number] = output
             originals[number] = expression
             protected_errors[number] = errors
@@ -88,7 +89,7 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
     # A syntactically valid LIMIT command may still point at an undefined or
     # non-prior row. Keep such a row for manual review; do not silently drop it.
     for number, errors in invalid_limit_errors.items():
-        converted[number] = engine.MANUAL_REVIEW_ATOM
+        converted[number] = base_engine.MANUAL_REVIEW_ATOM
         protected_errors[number] = []
         retained_flags = [
             flag
@@ -107,9 +108,9 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
     # References to valid LIMIT rows inherit the LIMIT base before removal.
     if limit_aliases:
         for number in sorted(converted):
-            if number in limit_aliases or converted[number] == engine.DROP_ATOM:
+            if number in limit_aliases or converted[number] == base_engine.DROP_ATOM:
                 continue
-            rewritten = engine.rewrite_hash_line_references(converted[number], limit_aliases)
+            rewritten = engine_v21.rewrite_hash_line_references(converted[number], limit_aliases)
             if rewritten != converted[number]:
                 converted[number] = rewritten
                 flags_by_line[number].append("references_to_ignored_limit_rows_redirected")
@@ -119,11 +120,13 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
     changed = True
     while changed:
         changed = False
-        dropped = {number for number, value in converted.items() if value == engine.DROP_ATOM}
+        dropped = {
+            number for number, value in converted.items() if value == base_engine.DROP_ATOM
+        }
         for number in sorted(converted):
             if number in dropped:
                 continue
-            value, did_change = engine.simplify_dropped_line_references(
+            value, did_change = base_engine.simplify_dropped_line_references(
                 converted[number], dropped, flags_by_line[number], number
             )
             if did_change:
@@ -131,7 +134,9 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
                 flags_by_line[number] = list(dict.fromkeys(flags_by_line[number]))
                 changed = True
 
-    dropped = {number for number, value in converted.items() if value == engine.DROP_ATOM}
+    dropped = {
+        number for number, value in converted.items() if value == base_engine.DROP_ATOM
+    }
     surviving_source_order = [number for number, _ in rows if number not in dropped]
 
     # Preserve v20 numbering unless valid LIMIT removal explicitly requires
@@ -148,7 +153,7 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
     surviving: dict[int, str] = {}
     for old_number in surviving_source_order:
         new_number = renumber_map[old_number]
-        surviving[new_number] = engine.rewrite_hash_line_references(
+        surviving[new_number] = engine_v21.rewrite_hash_line_references(
             converted[old_number], renumber_map
         )
         if renumber_due_to_limit and old_number != new_number:
@@ -189,7 +194,7 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
         source_level_errors = []
         final_number = renumber_map[surviving_source_order[-1]] if surviving_source_order else None
 
-    active = engine.final_query_dependency_closure(surviving, final_number)
+    active = base_engine.final_query_dependency_closure(surviving, final_number)
     active_source = {
         old_number
         for old_number, new_number in renumber_map.items()
@@ -204,7 +209,7 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
             new_number = renumber_map[old_number]
             line_errors[old_number] = list(
                 dict.fromkeys(
-                    engine.validate_converted_expression(
+                    base_engine.validate_converted_expression(
                         surviving[new_number], allow_line_references=True
                     )
                     + protected_errors[old_number]
@@ -215,12 +220,12 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
     all_errors = (
         list(strategy.source_errors)
         + source_level_errors
-        + engine.validate_reference_graph(active_map)
+        + base_engine.validate_reference_graph(active_map)
     )
     if synthetic_final_number is not None:
         all_errors.extend(
             f"line_#{synthetic_final_number}(synthetic_final_alias):{error}"
-            for error in engine.validate_converted_expression(
+            for error in base_engine.validate_converted_expression(
                 surviving[synthetic_final_number], allow_line_references=True
             )
         )
