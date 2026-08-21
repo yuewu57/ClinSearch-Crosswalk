@@ -14,6 +14,7 @@ from ovid_pubmed_converter.web_service import (
     download_payloads,
     has_eligible_update_date_construct,
     user_facing_validation_error,
+    user_facing_warning,
 )
 from web.branding import (
     AFFILIATION_LABEL,
@@ -126,6 +127,24 @@ st.info(
     "Deterministic, recall-oriented conversion. "
     "Review all warnings before retrieval."
 )
+st.warning(
+    "Ovid LIMIT and /freq constraints are detected and audited, but their Ovid "
+    "restriction semantics are not reproduced automatically in PubMed."
+)
+with st.expander("Important: how Ovid LIMIT and /freq are handled", expanded=True):
+    st.markdown(
+        "- **`limit N to ...`**: Evidentia keeps the underlying search represented by row "
+        "`N`, omits the LIMIT condition, redirects later references to the base row, and "
+        "renumbers surviving rows where required. After running the converted query in "
+        "PubMed, apply a relevant PubMed filter **where an equivalent exists** — for example "
+        "age, publication date/year, or language. Some Ovid limits do not have an exact "
+        "PubMed equivalent.\n"
+        "- **`/freq=1`**: removed as redundant. **`/freq=N` for `N > 1`**: the occurrence-"
+        "frequency requirement is removed, so retrieval is intentionally broader. PubMed "
+        "filters do not reproduce this term-frequency requirement.\n"
+        "- These changes are recorded in the line-by-line audit. Review them before using "
+        "the final search for evidence retrieval."
+    )
 
 with st.expander("About / Technical details"):
     st.write(f"Software version: {__version__}")
@@ -157,9 +176,15 @@ with paste_tab:
 with rtf_tab:
     st.write("Upload an Ovid MEDLINE search strategy (.rtf).")
     st.markdown(
+        "**Preferred input:** an Ovid RTF with visible strategy line numbers.\n\n"
         "Supported:\n"
-        "- an RTF containing a standalone numbered Ovid strategy; or\n"
-        '- an RTF containing an explicit "Medline:" section.'
+        "- a standalone **numbered** Ovid strategy; or\n"
+        '- an RTF containing an explicit **"Medline:"** section.\n\n'
+        "If a `Medline:` section is present but its line numbers are missing, Evidentia will "
+        "only reconstruct `1, 2, 3, ...` when every extracted paragraph looks like a complete "
+        "Ovid search row. The recovery is flagged for review. Ambiguous unnumbered RTFs are "
+        "rejected rather than guessed. A standalone RTF without a `Medline:` heading must "
+        "remain numbered."
     )
     st.download_button(
         "Download example RTF template",
@@ -202,6 +227,11 @@ if result is not None:
         st.error("Validation failed — this is not a validated PubMed query.")
     for error in result.validation_errors:
         st.write(f"- {user_facing_validation_error(error)}")
+
+    if result.warnings:
+        st.warning("Review the following conversion/input warnings before retrieval:")
+        for warning in result.warnings:
+            st.write(f"- {user_facing_warning(warning)}")
 
     with st.expander(
         "Translation notes / line-by-line audit",
