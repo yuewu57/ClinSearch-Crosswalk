@@ -87,19 +87,47 @@ def _recover_unnumbered_medline_rows(block_lines: list[str]):
     return [(number, line) for number, line in enumerate(cleaned, start=1)]
 
 
-def parse_rtf_bytes(data: bytes) -> Strategy:
-    """Decode an RTF upload and return the same Strategy model as paste mode."""
-    if not data or len(data) > MAX_RTF_BYTES:
-        raise ValueError("rtf_upload_empty_or_too_large")
-    if not data.lstrip().startswith(b"{\\rtf"):
-        raise ValueError("invalid_rtf_signature")
-    with tempfile.TemporaryDirectory(prefix="ovid-pubmed-") as directory:
-        path = Path(directory) / "input.rtf"
-        path.write_bytes(data)
-        text, metadata = engine.read_rtf_as_text_with_metadata(path)
+def _decode_plain_text_disguised_as_rtf(data: bytes) -> tuple[str, str] | None:
+    """Decode a non-RTF upload only when its text encoding can be identified safely."""
+    candidates: list[tuple[str, str]] = []
+    if data.startswith((b"\xff\xfe", b"\xfe\xff")):
+        candidates.append(("utf-16", "utf-16"))
+    elif data.startswith(b"\xef\xbb\xbf"):
+        candidates.append(("utf-8-sig", "utf-8-sig"))
+    else:
+        candidates.append(("utf-8", "utf-8"))
+
+    for codec, label in candidates:
+        try:
+            text = data.decode(codec)
+        except UnicodeDecodeError:
+            continue
+        if "\x00" in text:
+            continue
+        normalized = engine.normalize_unicode(text)
+        if not normalized.strip():
+            continue
+        return normalized, label
+    return None
+
+
+def _source_format(prefix: str, name: str) -> str:
+    """Preserve established RTF metadata names while namespacing fallback inputs."""
+    return f"{prefix}_{name}" if prefix else name
+
+
+def _strategy_from_extracted_text(
+    text: str,
+    metadata: dict,
+    *,
+    input_mode: str,
+    source_prefix: str,
+    initial_warnings: tuple[str, ...] = (),
+) -> Strategy:
+    """Build a Strategy from already decoded RTF/plain-text input."""
     lines = text.splitlines()
     start, end = engine.find_medline_block(lines)
-    input_warnings: list[str] = []
+    input_warnings = list(initial_warnings)
 
     if start is None:
         standalone = _standalone_numbered_strategy(lines, metadata)
@@ -107,19 +135,19 @@ def parse_rtf_bytes(data: bytes) -> Strategy:
             return Strategy(
                 (),
                 source_errors=("standalone_rtf_strategy_not_unambiguously_identified",),
-                metadata={**metadata, "input_mode": "rtf"},
+                metadata={**metadata, "input_mode": input_mode},
             )
         _block, rows = standalone
         before = []
         errors: list[str] = []
-        source_format = "standalone_numbered_strategy"
+        source_format = _source_format(source_prefix, "standalone_numbered_strategy")
     else:
         before = lines[:start]
         block = lines[start + 1 : end]
         if _has_explicit_row_numbers(block):
             rows = engine.parse_strategy_rows(block)
             errors = engine.validate_source_structure(block, rows, metadata)
-            source_format = "explicit_medline_block"
+            source_format = _source_format(source_prefix, "explicit_medline_block")
         else:
             recovered = _recover_unnumbered_medline_rows(block)
             if recovered is None:
@@ -128,8 +156,12 @@ def parse_rtf_bytes(data: bytes) -> Strategy:
                     source_errors=("rtf_medline_block_missing_reliable_line_numbers",),
                     metadata={
                         **metadata,
-                        "input_mode": "rtf",
-                        "source_format": "explicit_medline_block_unnumbered_ambiguous",
+                        "input_mode": input_mode,
+                        "source_format": _source_format(
+                            source_prefix,
+                            "explicit_medline_block_unnumbered_ambiguous",
+                        ),
+                        "input_warnings": tuple(input_warnings),
                     },
                 )
             rows = recovered
@@ -138,7 +170,10 @@ def parse_rtf_bytes(data: bytes) -> Strategy:
             # to validate the inferred sequence.
             recovery_metadata = {**metadata, "list_numbers": []}
             errors = engine.validate_source_structure(block, rows, recovery_metadata)
-            source_format = "explicit_medline_block_unnumbered_recovered"
+            source_format = _source_format(
+                source_prefix,
+                "explicit_medline_block_unnumbered_recovered",
+            )
             input_warnings.append("rtf_line_numbers_recovered_from_medline_paragraph_order")
 
     end_date = next(
@@ -151,7 +186,7 @@ def parse_rtf_bytes(data: bytes) -> Strategy:
     )
     metadata = {
         **metadata,
-        "input_mode": "rtf",
+        "input_mode": input_mode,
         "source_format": source_format,
         "input_warnings": tuple(input_warnings),
     }
@@ -160,4 +195,43 @@ def parse_rtf_bytes(data: bytes) -> Strategy:
         end_date=end_date,
         source_errors=tuple(errors),
         metadata=metadata,
+    )
+
+
+def parse_rtf_bytes(data: bytes) -> Strategy:
+    """Decode an RTF upload, including conservatively recognised plain-text impostors."""
+    if not data or len(data) > MAX_RTF_BYTES:
+        raise ValueError("rtf_upload_empty_or_too_large")
+
+    if data.lstrip().startswith(b"{\\rtf"):
+        with tempfile.TemporaryDirectory(prefix="ovid-pubmed-") as directory:
+            path = Path(directory) / "input.rtf"
+            path.write_bytes(data)
+            text, metadata = engine.read_rtf_as_text_with_metadata(path)
+        return _strategy_from_extracted_text(
+            text,
+            metadata,
+            input_mode="rtf",
+            source_prefix="",
+        )
+
+    decoded = _decode_plain_text_disguised_as_rtf(data)
+    if decoded is None:
+        raise ValueError("invalid_rtf_signature")
+    text, encoding = decoded
+    lines = text.splitlines()
+    start, _end = engine.find_medline_block(lines)
+    if start is None:
+        raise ValueError("invalid_rtf_signature")
+
+    metadata = {
+        "list_numbers": [],
+        "plain_text_encoding": encoding,
+    }
+    return _strategy_from_extracted_text(
+        text,
+        metadata,
+        input_mode="plain_text_disguised_as_rtf",
+        source_prefix="plain_text_rtf",
+        initial_warnings=("plain_text_file_uploaded_with_rtf_extension",),
     )

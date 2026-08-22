@@ -96,6 +96,34 @@ def test_rtf_template_matches_equivalent_paste_strategy():
     ]
 
 
+def test_utf16_plain_text_uploaded_as_rtf_is_accepted():
+    source = "Medline:\n\n1. exp Asthma/\n2. asthma.tw.\n3. 1 or 2\n"
+    result = convert_rtf(source.encode("utf-16"), resolver=fixture_resolver())
+
+    assert result.validation_status is ValidationStatus.OK
+    assert result.final_query == "#1 OR #2"
+    assert [row.number for row in result.rows] == [1, 2, 3]
+    assert "plain_text_file_uploaded_with_rtf_extension" in result.warnings
+    assert "actually plain text" in user_facing_warning(result.warnings[-1])
+    assert download_payloads(result)["pubmed_query.txt"] == (
+        b'("Asthma"[mh]) OR (asthma[tw])\n'
+    )
+
+
+def test_utf8_plain_text_uploaded_as_rtf_is_accepted():
+    source = "Medline:\n1. exp Asthma/\n2. asthma.tw.\n3. 1 or 2\n"
+    result = convert_rtf(source.encode("utf-8"), resolver=fixture_resolver())
+
+    assert result.validation_status is ValidationStatus.OK
+    assert "plain_text_file_uploaded_with_rtf_extension" in result.warnings
+
+
+def test_plain_text_without_medline_heading_still_fails_rtf_signature_check():
+    source = "1. exp Asthma/\n2. asthma.tw.\n3. 1 or 2\n"
+    with pytest.raises(ValueError, match="^invalid_rtf_signature$"):
+        convert_rtf(source.encode("utf-16"), resolver=fixture_resolver())
+
+
 def test_unnumbered_medline_rtf_is_recovered_by_paragraph_order():
     data = b"{\\rtf1\\ansi Medline:\\par exp Asthma/\\par asthma.tw.\\par 1 or 2}"
     result = convert_rtf(data, resolver=fixture_resolver())
