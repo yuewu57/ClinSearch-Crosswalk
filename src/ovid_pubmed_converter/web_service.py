@@ -30,6 +30,12 @@ def user_facing_validation_error(error: str) -> str:
             "strategy could be identified in the RTF. Re-export the Ovid strategy "
             "with line numbers, use the example RTF template, or paste the strategy instead."
         )
+    if error == "plain_text_rtf_missing_medline_heading":
+        return (
+            "The uploaded .rtf file was actually plain text, but no explicit Medline: "
+            "section could be identified safely. Re-export it as a genuine RTF or add the "
+            "Medline: heading and numbered Ovid strategy rows."
+        )
     if error == "rtf_medline_block_missing_reliable_line_numbers":
         return (
             'A "Medline:" section was found, but strategy line numbers were missing and '
@@ -42,6 +48,12 @@ def user_facing_validation_error(error: str) -> str:
 
 def user_facing_warning(warning: str) -> str:
     """Render high-value web warnings in plain language."""
+    if warning == "plain_text_file_uploaded_with_rtf_extension":
+        return (
+            "The uploaded .rtf file was actually plain text rather than Rich Text Format. "
+            "Evidentia decoded the text safely and processed its explicit Medline: strategy. "
+            "Verify the converted result before retrieval."
+        )
     if warning == "rtf_line_numbers_recovered_from_medline_paragraph_order":
         return (
             "The uploaded RTF had a Medline section but no visible strategy line numbers. "
