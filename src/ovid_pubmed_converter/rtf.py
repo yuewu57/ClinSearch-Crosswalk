@@ -18,7 +18,7 @@ _NUMBERED_ROW_RE = re.compile(
     flags=re.IGNORECASE,
 )
 _FIELD_SUFFIX_RE = re.compile(
-    r"\.[A-Za-z][A-Za-z0-9]*(?:\s*,\s*[A-Za-z][A-Za-z0-9]*)*\.\s*$",
+    r"\.[A-Za-z][A-Za-z0-9]*(?:\s*,\s*[A-Za-z][A-Za-z0-9]*)*\.?\s*$",
     flags=re.IGNORECASE,
 )
 _CONTROLLED_HEADING_RE = re.compile(
@@ -87,19 +87,45 @@ def _recover_unnumbered_medline_rows(block_lines: list[str]):
     return [(number, line) for number, line in enumerate(cleaned, start=1)]
 
 
+def _decode_plain_text_upload(data: bytes) -> tuple[str, str]:
+    """Decode text masquerading as .rtf using only unambiguous common encodings."""
+    candidates: list[tuple[str, str]] = []
+    if data.startswith((b"\xff\xfe", b"\xfe\xff")):
+        candidates.append(("utf-16", "utf-16"))
+    else:
+        candidates.extend((("utf-8-sig", "utf-8"), ("utf-16", "utf-16")))
+
+    for codec, label in candidates:
+        try:
+            text = data.decode(codec)
+        except (UnicodeDecodeError, UnicodeError):
+            continue
+        if "\x00" in text:
+            continue
+        if not text.strip():
+            continue
+        return engine.normalize_unicode(text), label
+    raise ValueError("invalid_rtf_signature")
+
+
 def parse_rtf_bytes(data: bytes) -> Strategy:
-    """Decode an RTF upload and return the same Strategy model as paste mode."""
+    """Decode an RTF upload or safely recognisable plain-text .rtf strategy."""
     if not data or len(data) > MAX_RTF_BYTES:
         raise ValueError("rtf_upload_empty_or_too_large")
-    if not data.lstrip().startswith(b"{\\rtf"):
-        raise ValueError("invalid_rtf_signature")
-    with tempfile.TemporaryDirectory(prefix="ovid-pubmed-") as directory:
-        path = Path(directory) / "input.rtf"
-        path.write_bytes(data)
-        text, metadata = engine.read_rtf_as_text_with_metadata(path)
+
+    input_warnings: list[str] = []
+    if data.lstrip().startswith(b"{\\rtf"):
+        with tempfile.TemporaryDirectory(prefix="ovid-pubmed-") as directory:
+            path = Path(directory) / "input.rtf"
+            path.write_bytes(data)
+            text, metadata = engine.read_rtf_as_text_with_metadata(path)
+    else:
+        text, encoding = _decode_plain_text_upload(data)
+        metadata = {"plain_text_encoding": encoding, "list_numbers": []}
+        input_warnings.append("rtf_extension_plain_text_decoded")
+
     lines = text.splitlines()
     start, end = engine.find_medline_block(lines)
-    input_warnings: list[str] = []
 
     if start is None:
         standalone = _standalone_numbered_strategy(lines, metadata)
