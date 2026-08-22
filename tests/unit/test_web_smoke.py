@@ -118,15 +118,10 @@ def test_utf8_plain_text_uploaded_as_rtf_is_accepted():
     assert "plain_text_file_uploaded_with_rtf_extension" in result.warnings
 
 
-def test_plain_text_rtf_without_medline_heading_is_rejected():
+def test_plain_text_without_medline_heading_still_fails_rtf_signature_check():
     source = "1. exp Asthma/\n2. asthma.tw.\n3. 1 or 2\n"
-    result = convert_rtf(source.encode("utf-16"), resolver=fixture_resolver())
-
-    assert result.validation_status is ValidationStatus.VALIDATION_FAILED
-    assert result.validation_errors == ("plain_text_rtf_missing_medline_heading",)
-    message = user_facing_validation_error(result.validation_errors[0])
-    assert "actually plain text" in message
-    assert "Medline:" in message
+    with pytest.raises(ValueError, match="^invalid_rtf_signature$"):
+        convert_rtf(source.encode("utf-16"), resolver=fixture_resolver())
 
 
 def test_unnumbered_medline_rtf_is_recovered_by_paragraph_order():
