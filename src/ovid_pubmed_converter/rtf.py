@@ -111,13 +111,17 @@ def _decode_plain_text_disguised_as_rtf(data: bytes) -> tuple[str, str] | None:
     return None
 
 
+def _source_format(prefix: str, name: str) -> str:
+    """Preserve established RTF metadata names while namespacing fallback inputs."""
+    return f"{prefix}_{name}" if prefix else name
+
+
 def _strategy_from_extracted_text(
     text: str,
     metadata: dict,
     *,
     input_mode: str,
     source_prefix: str,
-    require_medline_heading: bool = False,
     initial_warnings: tuple[str, ...] = (),
 ) -> Strategy:
     """Build a Strategy from already decoded RTF/plain-text input."""
@@ -126,17 +130,6 @@ def _strategy_from_extracted_text(
     input_warnings = list(initial_warnings)
 
     if start is None:
-        if require_medline_heading:
-            return Strategy(
-                (),
-                source_errors=("plain_text_rtf_missing_medline_heading",),
-                metadata={
-                    **metadata,
-                    "input_mode": input_mode,
-                    "source_format": f"{source_prefix}_missing_medline_heading",
-                    "input_warnings": tuple(input_warnings),
-                },
-            )
         standalone = _standalone_numbered_strategy(lines, metadata)
         if standalone is None:
             return Strategy(
@@ -147,14 +140,14 @@ def _strategy_from_extracted_text(
         _block, rows = standalone
         before = []
         errors: list[str] = []
-        source_format = f"{source_prefix}_standalone_numbered_strategy"
+        source_format = _source_format(source_prefix, "standalone_numbered_strategy")
     else:
         before = lines[:start]
         block = lines[start + 1 : end]
         if _has_explicit_row_numbers(block):
             rows = engine.parse_strategy_rows(block)
             errors = engine.validate_source_structure(block, rows, metadata)
-            source_format = f"{source_prefix}_explicit_medline_block"
+            source_format = _source_format(source_prefix, "explicit_medline_block")
         else:
             recovered = _recover_unnumbered_medline_rows(block)
             if recovered is None:
@@ -164,7 +157,10 @@ def _strategy_from_extracted_text(
                     metadata={
                         **metadata,
                         "input_mode": input_mode,
-                        "source_format": f"{source_prefix}_explicit_medline_block_unnumbered_ambiguous",
+                        "source_format": _source_format(
+                            source_prefix,
+                            "explicit_medline_block_unnumbered_ambiguous",
+                        ),
                         "input_warnings": tuple(input_warnings),
                     },
                 )
@@ -174,7 +170,10 @@ def _strategy_from_extracted_text(
             # to validate the inferred sequence.
             recovery_metadata = {**metadata, "list_numbers": []}
             errors = engine.validate_source_structure(block, rows, recovery_metadata)
-            source_format = f"{source_prefix}_explicit_medline_block_unnumbered_recovered"
+            source_format = _source_format(
+                source_prefix,
+                "explicit_medline_block_unnumbered_recovered",
+            )
             input_warnings.append("rtf_line_numbers_recovered_from_medline_paragraph_order")
 
     end_date = next(
@@ -213,13 +212,18 @@ def parse_rtf_bytes(data: bytes) -> Strategy:
             text,
             metadata,
             input_mode="rtf",
-            source_prefix="rtf",
+            source_prefix="",
         )
 
     decoded = _decode_plain_text_disguised_as_rtf(data)
     if decoded is None:
         raise ValueError("invalid_rtf_signature")
     text, encoding = decoded
+    lines = text.splitlines()
+    start, _end = engine.find_medline_block(lines)
+    if start is None:
+        raise ValueError("invalid_rtf_signature")
+
     metadata = {
         "list_numbers": [],
         "plain_text_encoding": encoding,
@@ -229,6 +233,5 @@ def parse_rtf_bytes(data: bytes) -> Strategy:
         metadata,
         input_mode="plain_text_disguised_as_rtf",
         source_prefix="plain_text_rtf",
-        require_medline_heading=True,
         initial_warnings=("plain_text_file_uploaded_with_rtf_extension",),
     )
