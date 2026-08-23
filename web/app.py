@@ -12,7 +12,6 @@ from ovid_pubmed_converter.web_service import (
     convert_paste,
     convert_rtf,
     download_payloads,
-    has_eligible_update_date_construct,
     user_facing_validation_error,
     user_facing_warning,
 )
@@ -142,8 +141,11 @@ with st.expander("Important: how Ovid LIMIT and /freq are handled", expanded=Tru
         "- **`/freq=1`**: removed as redundant. **`/freq=N` for `N > 1`**: the occurrence-"
         "frequency requirement is removed, so retrieval is intentionally broader. PubMed "
         "filters do not reproduce this term-frequency requirement.\n"
-        "- These changes are recorded in the line-by-line audit. Review them before using "
-        "the final search for evidence retrieval."
+        "- Pure numeric Ovid database-update date rows using **`.ed.`**, **`.dt.`**, "
+        "**`.ed,dt.`**, or **`.dt,ed.`** are discarded automatically under v21 and recorded "
+        "in the line-by-line audit. No end-date input is required in the online converter.\n"
+        "- Review all audited approximations before using the final search for evidence "
+        "retrieval."
     )
 
 with st.expander("About / Technical details"):
@@ -159,18 +161,8 @@ with paste_tab:
         height=300,
         placeholder="1 exp Asthma/\n2 asthma.tw.\n3 1 or 2",
     )
-    end_date = None
-    if has_eligible_update_date_construct(pasted):
-        with st.expander("Advanced options"):
-            end_date = st.text_input(
-                "External source-search end date",
-                help=(
-                    "Used only for handling eligible Ovid .ed,dt. update-date lines. "
-                    "This does not add a publication-date restriction to the PubMed query."
-                ),
-            )
     if st.button("Convert", type="primary"):
-        st.session_state.conversion_result = convert_paste(pasted, end_date)
+        st.session_state.conversion_result = convert_paste(pasted)
         st.session_state.conversion_was_rtf = False
 
 with rtf_tab:
