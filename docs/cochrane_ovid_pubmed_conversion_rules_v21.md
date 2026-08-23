@@ -9,12 +9,13 @@ v21 preserves every approved v20 rule except where this document explicitly over
 
 ## 1. Scope of v21
 
-v21 adds four narrowly scoped behaviours:
+v21 adds five narrowly scoped behaviours:
 
 1. Ovid `/freq=N` occurrence-frequency modifiers;
 2. whole-row Ovid `limit N to ...` constructs;
 3. robust PubMed handling of quoted wildcard-bearing free-text phrases;
-4. consequential row-reference rewriting and renumbering required by ignored LIMIT rows.
+4. consequential row-reference rewriting and renumbering required by ignored LIMIT rows;
+5. removal of pure numeric Ovid MEDLINE database-update date filters using `.ed.`, `.dt.`, `.ed,dt.` or `.dt,ed.`.
 
 v21 does **not** add automatic repair or numbering of a completely unnumbered multi-row MEDLINE strategy. That usability feature is reserved for the online/input-adapter layer, where physical line wrapping can be distinguished from logical strategy rows without changing the conversion ruleset.
 
@@ -105,7 +106,7 @@ Under the existing active-query rule:
 
 When one or more valid LIMIT rows are removed, surviving output rows are renumbered consecutively from 1 and every line reference is rewritten consistently.
 
-This v21 renumbering is triggered by valid LIMIT removal. Existing v20 behaviour for unrelated removals, including the pure `.ed,dt.` rule, is otherwise preserved.
+This v21 renumbering is triggered by valid LIMIT removal. Existing v20 behaviour for unrelated removals is otherwise preserved.
 
 ### 3.5 Final LIMIT row
 
@@ -204,7 +205,83 @@ The following is therefore accepted and intentional:
 
 This is an inherited recall-oriented approximation, not a v21 defect.
 
-## 5. Audit-row statuses added by v21
+## 5. Pure Ovid MEDLINE database-update date filters
+
+Ovid MEDLINE `.ed.` and `.dt.` fields are record-processing/update dates rather than clinical search concepts. v21 therefore removes a whole row as database-update bookkeeping when all of the following are true:
+
+1. the complete row ends in `.ed.`, `.dt.`, `.ed,dt.` or `.dt,ed.`;
+2. the expression before the suffix contains only numeric date prefixes, optional `*`, parentheses, `OR`, and whitespace;
+3. there are no clinical/search terms and no other fields.
+
+Qualifying examples include:
+
+```text
+2022*.ed.
+2022*.dt.
+(2021* or 2022*).ed,dt.
+(201107* or 201108* or 2012* or 2013*).dt,ed.
+```
+
+These rows are removed and must never be converted to free-text PubMed terms.
+
+The base audit flag is:
+
+```text
+ovid_database_update_date_filter_ignored
+```
+
+### 5.1 External `End_date` supplied
+
+When the source strategy has an external `End_date`, that metadata remains the retrieval-date boundary and the removed Ovid update-date row also carries:
+
+```text
+external_end_date_applied_instead_of_ovid_update_date_filter
+```
+
+### 5.2 No external `End_date`
+
+The pure update-date row is still removed, but the loss of that source restriction is an intentional recall broadening and is audited with:
+
+```text
+ovid_update_date_filter_ignored_without_external_end_date
+major_semantic_approximation_recall_broadened
+```
+
+### 5.3 Boolean dependency handling
+
+The normal Cochrane update-search form is an `AND` wrapper:
+
+```text
+22. substantive clinical search
+23. (...numeric dates...).ed,dt.
+24. 22 and 23
+```
+
+After row 23 is removed, row 24 simplifies to the substantive row:
+
+```text
+#24 #22
+```
+
+This removal does **not** trigger consecutive renumbering. The surviving source row numbers are preserved unless a valid v21 LIMIT removal independently requires renumbering.
+
+An `OR` or `NOT` reference to a removed update-date row is not treated as a normal filter wrapper and must not be silently simplified. Such a dependent row is marked for manual review with:
+
+```text
+ovid_update_date_reference_in_or_not_manual_review_required:#N
+```
+
+### 5.4 Mixed or non-numeric date-field expressions
+
+A row such as:
+
+```text
+(cancer or 2022*).ed,dt.
+```
+
+is outside this rule and must not be silently discarded. Existing conversion/validation behavior applies.
+
+## 6. Audit-row statuses added by v21
 
 In addition to the v20 audit-row statuses, v21 uses:
 
@@ -213,15 +290,17 @@ removed_ignored_ovid_limit
 removed_ignored_ovid_update_date
 ```
 
-A valid ignored LIMIT row also carries the semantic-broadening audit flag:
+A valid ignored LIMIT row also carries:
 
 ```text
 major_semantic_approximation_recall_broadened
 ```
 
-Invalid LIMIT rows are not labelled as ignored; they remain reviewable rows.
+A removed pure update-date row carries `ovid_database_update_date_filter_ignored` plus the applicable End_date audit described above.
 
-## 6. Regression requirements
+Invalid LIMIT rows and unsafe OR/NOT update-date dependencies remain reviewable rows rather than being silently discarded.
+
+## 7. Regression requirements
 
 A v21 implementation must regression-test at minimum:
 
@@ -237,22 +316,32 @@ A v21 implementation must regression-test at minimum:
 - no inserted Boolean separators inside grouped wildcard phrases;
 - literal Boolean words inside surviving wildcard phrases;
 - inherited `"research and develop*" → (research AND develop*)` stopword behaviour;
+- pure `.ed.`, `.dt.`, `.ed,dt.` and `.dt,ed.` numeric update-date removal;
+- update-date removal with and without external `End_date`;
+- CD005595-style `#concept AND #date` wrapper simplification;
+- no renumbering caused solely by update-date removal;
+- manual review for `OR`/`NOT` dependencies on removed update-date rows;
+- mixed/non-numeric date-field expressions not silently discarded;
 - final-query dependency closure and retrieval gating.
 
-## 7. Frozen v21 decisions
+## 8. Frozen v21 decisions
 
 The following are frozen for v21:
 
 ```text
-/freq=1              → remove as redundant
-/freq=N, N>1         → remove; audit recall broadening
-malformed /freq      → manual review
-limit N to condition → ignore condition; alias to N; audit broadening
-valid LIMIT removal  → redirect references and consecutively renumber output
-final LIMIT           → preserve its resolved base as effective final query
-"A* B* C*"[xx]       → (A* B* C*[xx]) when safe
+/freq=1                         → remove as redundant
+/freq=N, N>1                    → remove; audit recall broadening
+malformed /freq                 → manual review
+limit N to condition            → ignore condition; alias to N; audit broadening
+valid LIMIT removal             → redirect references and consecutively renumber output
+final LIMIT                      → preserve its resolved base as effective final query
+"A* B* C*"[xx]                  → (A* B* C*[xx]) when safe
+pure numeric .ed./.dt. row       → discard as database-update bookkeeping
+pure numeric .ed,dt./.dt,ed. row → discard as database-update bookkeeping
+#concept AND #date               → simplify to #concept
+#concept OR/NOT #date            → manual review
 ```
 
-For the final wildcard rule, the field tag remains attached to the multi-term phrase inside the outer parentheses. No Boolean separator is inserted between the words and the tag is not repeated per token.
+For wildcard phrases, the field tag remains attached to the multi-term phrase inside the outer parentheses. For update-date rows, removal alone does not renumber surviving rows.
 
 Automatic numbering of wholly unnumbered multi-row input is deliberately outside the v21 ruleset and may be implemented separately by the online converter/input-adapter layer.
