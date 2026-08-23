@@ -286,9 +286,7 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
         if old_number in dropped:
             if old_number in limit_aliases:
                 row_status = "removed_ignored_ovid_limit"
-            elif "ovid_database_update_date_filter_ignored" in flags_by_line[old_number]:
-                row_status = "removed_ignored_ovid_update_date"
-            elif (
+            elif "ovid_database_update_date_filter_ignored" in flags_by_line[old_number] or (
                 "ovid_ed_dt_update_line_omitted_external_end_date_applied"
                 in flags_by_line[old_number]
             ):
