@@ -2,7 +2,7 @@
 
 The mature v20 implementation remains in ``engine``. This module adds only
 approved v21 semantics: Ovid /freq handling, LIMIT-row classification helpers,
-and PubMed grouped wildcard-phrase rendering after v20 canonicalisation.
+and PubMed-safe grouped wildcard-phrase rendering after v20 canonicalisation.
 """
 
 import re
@@ -96,18 +96,22 @@ def rewrite_hash_line_references(expr: str, mapping: dict[int, int]) -> str:
 
 
 def group_wildcard_fielded_phrases(line: str):
-    """Render safe wildcard phrases as one grouped PubMed fielded unit.
+    """Render safe wildcard phrases using PubMed-valid phrase-tag grouping.
 
     v20 may emit a wildcard-bearing multi-word free-text atom in quotes, for
-    example ``\"minimal change nephr*\"[tw]``. v21 preserves the internal word
-    sequence and the single trailing field tag, but removes the phrase quotes
-    and adds explicit grouping instead::
+    example ``\"minimal change nephr*\"[tw]``. PubMed's multi-term field-tag
+    phrase syntax keeps the field tag attached to the phrase itself. v21 wraps
+    that complete fielded expression for explicit grouping::
 
-        \"A* B* C*\"[tw] -> (A* B* C*)[tw]
+        \"A* B* C*\"[tw] -> (A* B* C*[tw])
 
-    No Boolean separator is inserted between the words and the field tag is not
-    duplicated per token. Literal standalone Boolean words remain quoted so
-    phrase text cannot be reinterpreted as PubMed Boolean syntax.
+    The field tag is therefore inside the outer parentheses. The invalid form
+    ``(A* B* C*)[tw]`` must not be emitted because it attempts to qualify a
+    parenthesized Boolean group rather than the multi-term phrase.
+
+    No Boolean separator is inserted between phrase terms and the field tag is
+    not duplicated per token. Literal standalone Boolean words remain quoted
+    so phrase text cannot be reinterpreted as PubMed Boolean syntax.
     """
     flags: list[str] = []
     pattern = re.compile(
@@ -131,8 +135,10 @@ def group_wildcard_fielded_phrases(line: str):
                 f"{boolean_token.group(1).upper()}:{phrase}[{tag}]"
             )
             return f'"{phrase}"[{tag}]'
-        flags.append(f"wildcard_phrase_grouped_field_tag_preserved:{phrase}[{tag}]")
-        return f"({phrase})[{tag}]"
+        flags.append(
+            f"wildcard_phrase_grouped_pubmed_phrase_tag_preserved:{phrase}[{tag}]"
+        )
+        return f"({phrase}[{tag}])"
 
     return pattern.sub(repl, line), flags
 
