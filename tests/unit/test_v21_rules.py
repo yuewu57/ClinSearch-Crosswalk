@@ -100,9 +100,9 @@ def test_wildcard_phrase_is_grouped_after_tag_canonicalisation():
 
 
 def test_three_word_wildcard_phrase_is_grouped_without_boolean_separators():
-    result = convert_strategy(parse_strategy_text('1 "A* B* C*".tw.'))
+    result = convert_strategy(parse_strategy_text('1 "alpha* beta* gamma*".tw.'))
     assert result.validation_status is ValidationStatus.OK
-    assert result.rows[0].converted == "(A* B* C*)[tw]"
+    assert result.rows[0].converted == "(alpha* beta* gamma*)[tw]"
     assert " AND " not in result.rows[0].converted
 
 
