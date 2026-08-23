@@ -74,11 +74,26 @@ def test_end_date_does_not_change_an_ordinary_strategy():
     ]
 
 
-def test_end_date_only_applies_documented_ed_dt_cleanup():
+def test_v21_update_date_cleanup_applies_with_or_without_end_date():
     source = "1 asthma.tw.\n2 (202401* or 2025*).ed,dt.\n3 1 and 2"
     without_end_date = convert_strategy(parse_strategy_text(source))
     with_end_date = convert_strategy(parse_strategy_text(source, end_date="31-12-2025"))
 
-    assert without_end_date.rows[1].converted
+    assert without_end_date.validation_status is ValidationStatus.OK
+    assert with_end_date.validation_status is ValidationStatus.OK
+    assert without_end_date.rows[1].validation_status == "removed_ignored_ovid_update_date"
     assert with_end_date.rows[1].validation_status == "removed_ignored_ovid_update_date"
+    assert (
+        "ovid_update_date_filter_ignored_without_external_end_date"
+        in without_end_date.rows[1].audit_flags
+    )
+    assert (
+        "major_semantic_approximation_recall_broadened"
+        in without_end_date.rows[1].audit_flags
+    )
+    assert (
+        "external_end_date_applied_instead_of_ovid_update_date_filter"
+        in with_end_date.rows[1].audit_flags
+    )
+    assert without_end_date.final_query == "#1"
     assert with_end_date.final_query == "#1"

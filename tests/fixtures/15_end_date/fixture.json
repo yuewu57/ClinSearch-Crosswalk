@@ -1,7 +1,7 @@
 {
   "id": "15_end_date",
-  "purpose": "Pure .ed,dt. update line is omitted only when external End_date is supplied; dependent references are simplified.",
-  "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v20",
+  "purpose": "Pure numeric Ovid database-update date rows are discarded in v21; when external End_date is supplied it remains the retrieval-date boundary and dependent AND references are simplified.",
+  "authority": "Normative Cochrane Ovid MEDLINE-to-PubMed Conversion Rules v21",
   "input_modes": [
     "paste",
     "rtf"
@@ -13,7 +13,8 @@
   "expected_validation_status": "ok",
   "expected_last_output_line": "#5 #3",
   "required_audit_substrings": [
-    "ovid_ed_dt_update_line_omitted_external_end_date_applied",
+    "ovid_database_update_date_filter_ignored",
+    "external_end_date_applied_instead_of_ovid_update_date_filter",
     "dropped_short_root_line_reference_simplified:#4 in #5"
   ],
   "forbidden_audit_substrings": [],
@@ -21,5 +22,6 @@
     ".ed,dt.",
     "#4 "
   ],
-  "reference_v20_v2_status": "PASS"
+  "reference_v20_v2_status": "PASS",
+  "v21_delta": "Update-date omission is now unconditional for qualifying pure numeric .ed./.dt. rows; external End_date changes the audit rationale, not whether the row is removed."
 }

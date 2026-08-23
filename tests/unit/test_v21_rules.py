@@ -119,7 +119,93 @@ def test_inherited_and_stopword_behaviour_is_accepted():
     assert result.rows[0].converted == "(research[tw] AND develop*[tw])"
 
 
-def test_ed_dt_omission_alone_does_not_trigger_v21_renumbering():
+def test_update_date_filter_is_removed_with_external_end_date():
+    source = "1 asthma.tw.\n2 (202401* or 2025*).ed,dt.\n3 1 and 2"
+    result = convert_strategy(parse_strategy_text(source, end_date="31-12-2025"))
+    assert result.validation_status is ValidationStatus.OK
+    assert result.rows[1].validation_status == "removed_ignored_ovid_update_date"
+    assert "ovid_database_update_date_filter_ignored" in result.rows[1].audit_flags
+    assert (
+        "external_end_date_applied_instead_of_ovid_update_date_filter"
+        in result.rows[1].audit_flags
+    )
+    assert strategy_text(result).splitlines() == [
+        "#1 asthma[tw]",
+        "#3 #1",
+    ]
+    assert one_line_query(result) == "asthma[tw]"
+
+
+def test_update_date_filter_is_removed_without_external_end_date_with_warning():
+    source = "1 asthma.tw.\n2 2022*.dt.\n3 1 and 2"
+    result = convert_strategy(parse_strategy_text(source))
+    assert result.validation_status is ValidationStatus.OK
+    assert result.rows[1].validation_status == "removed_ignored_ovid_update_date"
+    assert "ovid_update_date_filter_ignored_without_external_end_date" in result.rows[1].audit_flags
+    assert "major_semantic_approximation_recall_broadened" in result.rows[1].audit_flags
+    assert one_line_query(result) == "asthma[tw]"
+
+
+def test_single_ed_and_reversed_dt_ed_forms_are_removed():
+    for expression in ("2022*.ed.", "(2021* or 2022*).dt,ed."):
+        source = f"1 asthma.tw.\n2 {expression}\n3 1 and 2"
+        result = convert_strategy(parse_strategy_text(source, end_date="31-12-2022"))
+        assert result.validation_status is ValidationStatus.OK
+        assert result.rows[1].validation_status == "removed_ignored_ovid_update_date"
+        assert one_line_query(result) == "asthma[tw]"
+
+
+def test_mixed_non_numeric_ed_dt_expression_is_not_silently_discarded():
+    source = "1 asthma.tw.\n2 (cancer or 2022*).ed,dt.\n3 1 and 2"
+    result = convert_strategy(parse_strategy_text(source, end_date="31-12-2022"))
+    assert result.rows[1].validation_status != "removed_ignored_ovid_update_date"
+
+
+def test_update_date_reference_under_or_requires_manual_review():
+    source = "1 asthma.tw.\n2 2022*.ed,dt.\n3 1 or 2"
+    result = convert_strategy(parse_strategy_text(source, end_date="31-12-2022"))
+    assert result.validation_status is ValidationStatus.VALIDATION_FAILED
+    assert any(
+        "ovid_update_date_reference_in_or_not_manual_review_required" in flag
+        for flag in result.rows[2].audit_flags
+    )
+    assert one_line_query(result) == ""
+
+
+def test_update_date_reference_under_not_requires_manual_review():
+    source = "1 asthma.tw.\n2 2022*.ed,dt.\n3 1 not 2"
+    result = convert_strategy(parse_strategy_text(source, end_date="31-12-2022"))
+    assert result.validation_status is ValidationStatus.VALIDATION_FAILED
+    assert any(
+        "ovid_update_date_reference_in_or_not_manual_review_required" in flag
+        for flag in result.rows[2].audit_flags
+    )
+    assert one_line_query(result) == ""
+
+
+def test_cd005595_style_update_wrapper_is_discarded_without_renumbering():
+    source = (
+        "1 ankle.tw.\n"
+        "2 fracture.tw.\n"
+        "3 1 or 2\n"
+        "4 rehabilitation.tw.\n"
+        "5 3 and 4\n"
+        "23 (201107* or 201108* or 201109* or 201110* or 201111* or 201112* "
+        "or 2012* or 2013* or 2014* or 2015* or 2016* or 2017* or 2018* "
+        "or 2019* or 2020* or 2021* or 2022*).ed,dt.\n"
+        "24 5 and 23"
+    )
+    result = convert_strategy(parse_strategy_text(source, end_date="29-03-2023"))
+    assert result.validation_status is ValidationStatus.OK
+    assert result.rows[-2].number == 23
+    assert result.rows[-2].validation_status == "removed_ignored_ovid_update_date"
+    assert result.final_line_number == 24
+    assert result.final_query == "#5"
+    assert strategy_text(result).splitlines()[-1] == "#24 #5"
+    assert one_line_query(result) == "((ankle[tw]) OR (fracture[tw])) AND (rehabilitation[tw])"
+
+
+def test_update_date_omission_alone_does_not_trigger_v21_renumbering():
     source = "1 asthma.tw.\n2 (202401* or 2025*).ed,dt.\n3 cancer.tw.\n4 1 and 3"
     result = convert_strategy(parse_strategy_text(source, end_date="31-12-2025"))
     assert result.validation_status is ValidationStatus.OK
