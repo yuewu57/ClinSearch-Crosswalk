@@ -116,7 +116,42 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
                 flags_by_line[number].append("references_to_ignored_limit_rows_redirected")
                 flags_by_line[number] = list(dict.fromkeys(flags_by_line[number]))
 
-    # Existing v20 dropped-row simplification, after LIMIT redirection.
+    # v21 database-update date rows are intentionally discarded. An AND
+    # reference to such a row is the normal update-search wrapper and can be
+    # simplified by the inherited dropped-row logic below. OR/NOT use is not a
+    # filter wrapper and is therefore retained as an explicit manual-review
+    # defect instead of being simplified silently.
+    update_date_rows = {
+        number
+        for number, flags in flags_by_line.items()
+        if "ovid_database_update_date_filter_ignored" in flags
+    }
+    if update_date_rows:
+        for number in sorted(converted):
+            if number in update_date_rows or converted[number] in {
+                base_engine.DROP_ATOM,
+                base_engine.MANUAL_REVIEW_ATOM,
+            }:
+                continue
+            refs = set(base_engine.referenced_line_numbers(converted[number]))
+            affected = sorted(refs & update_date_rows)
+            if not affected:
+                continue
+            boolean_parts = [
+                part.strip().upper()
+                for part in base_engine.split_top_level_boolean(converted[number])
+            ]
+            if "OR" in boolean_parts or "NOT" in boolean_parts:
+                converted[number] = base_engine.MANUAL_REVIEW_ATOM
+                protected_errors[number] = []
+                flags_by_line[number].append(
+                    "ovid_update_date_reference_in_or_not_manual_review_required:"
+                    + ",".join(f"#{ref}" for ref in affected)
+                )
+                flags_by_line[number] = list(dict.fromkeys(flags_by_line[number]))
+
+    # Existing v20 dropped-row simplification, after LIMIT redirection and the
+    # v21 update-date OR/NOT safety gate.
     changed = True
     while changed:
         changed = False
@@ -140,7 +175,7 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
     surviving_source_order = [number for number, _ in rows if number not in dropped]
 
     # Preserve v20 numbering unless valid LIMIT removal explicitly requires
-    # consecutive output renumbering.
+    # consecutive output renumbering. Update-date removal alone never renumbers.
     renumber_due_to_limit = bool(limit_aliases)
     if renumber_due_to_limit:
         renumber_map = {
@@ -251,6 +286,8 @@ def convert_strategy(strategy: Strategy, *, mesh_resolver=None) -> ConversionRes
         if old_number in dropped:
             if old_number in limit_aliases:
                 row_status = "removed_ignored_ovid_limit"
+            elif "ovid_database_update_date_filter_ignored" in flags_by_line[old_number]:
+                row_status = "removed_ignored_ovid_update_date"
             elif (
                 "ovid_ed_dt_update_line_omitted_external_end_date_applied"
                 in flags_by_line[old_number]
