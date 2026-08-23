@@ -13,10 +13,10 @@ A deterministic, rule-based, recall-oriented converter implementing the approved
 - Exact cache-first MeSH resolution, optional exact online lookup, and executable source-heading fallback with an audit warning.
 - Structured validation, active-query dependency analysis, and TXT/CSV/JSON/RTF downloads.
 - A copy-ready **one-line PubMed query** is produced by recursively expanding the validated final row; the numbered PubMed strategy is retained separately for audit and troubleshooting.
-- v21 support for Ovid `/freq=N`, ignored `limit N to ...` rows with reference-safe renumbering, and PubMed-safe wildcard phrases.
+- v21 support for Ovid `/freq=N`, ignored `limit N to ...` rows with reference-safe renumbering, automatic removal of pure numeric Ovid database-update date rows, and PubMed-safe wildcard phrases.
 - No accounts, database, or persistent upload storage.
 
-Exact retrieval equivalence cannot always be guaranteed. In particular, Ovid adjacency is approximated as PubMed `AND`, Ovid `.ab.` maps to PubMed `[tiab]`, `/freq>1` and ignored LIMIT conditions are recall-broadening approximations, and unresolved MeSH headings can use the documented source-heading fallback. A `validation_failed` or `manual_review_required` result requires attention and is not a validated query.
+Exact retrieval equivalence cannot always be guaranteed. In particular, Ovid adjacency is approximated as PubMed `AND`, Ovid `.ab.` maps to PubMed `[tiab]`, `/freq>1`, ignored LIMIT conditions, and omitted database-update date restrictions can broaden retrieval, and unresolved MeSH headings can use the documented source-heading fallback. A `validation_failed` or `manual_review_required` result requires attention and is not a validated query.
 
 ## Supported input modes
 
@@ -24,7 +24,7 @@ Exact retrieval equivalence cannot always be guaranteed. In particular, Ovid adj
 
 Open the default **Paste strategy** tab, enter rows such as `1 exp Asthma/`, and select **Convert**. Common `1`, `1.`, and `1)` row labels are accepted. If a pasted strategy contains no row labels, each non-empty pasted line is treated as one logical strategy row and numbered sequentially; users should therefore place exactly one logical Ovid row on each pasted line.
 
-The normal interface has no end-date field. An **External source-search end date** appears under **Advanced options** only when an eligible combined Ovid `.ed,dt.` update line is detected. This technical compatibility input controls the established omission rule; it does not add a PubMed publication-date restriction. The CLI `--end-date` option remains available for automated legacy workflows.
+The online interface has **no end-date field**. Under v21, a pure numeric database-update row using `.ed.`, `.dt.`, `.ed,dt.` or `.dt,ed.` is discarded automatically and recorded in the line-by-line audit. No publication-date restriction is added to the PubMed query. The CLI `--end-date` option remains available only for automated or legacy workflows that need to preserve external metadata handling.
 
 ### RTF upload
 
@@ -43,7 +43,7 @@ For a validated conversion, the web page shows two complementary PubMed represen
 1. **One-line PubMed query** — the primary copy-ready query. Starting from the selected final PubMed row, Evidentia recursively substitutes every referenced `#N` row and parenthesizes each substitution to preserve Boolean precedence. Only the final row's dependency closure is expanded; unused rows are not appended to the executable query.
 2. **Numbered PubMed strategy** — retained for audit, comparison, and troubleshooting. It may contain local `#N` references because it represents the conversion row by row.
 
-The one-line query is produced only for a conversion with `ok` validation status and is locally validated again with line references disallowed. It does not add a publication-date restriction from `End_date`; that metadata remains limited to the established `.ed,dt.` compatibility rule.
+The one-line query is produced only for a conversion with `ok` validation status and is locally validated again with line references disallowed. The online converter does not ask for external end-date metadata and does not add a publication-date restriction when it removes an Ovid database-update date row.
 
 ## Installation and running locally
 
@@ -110,7 +110,7 @@ Fixture `mesh_records.json` files contain synthetic identifiers for tests and mu
 
 Validation checks syntax, PubMed tags, source rows, references, cycles, and the active final-query dependency closure. Problematic unused rows remain auditable. Unsupported syntax, bounded wildcard limits, approximation flags, and unresolved cases may require manual review.
 
-For v21, a valid whole-row `limit N to ...` is intentionally reduced to its underlying row `N`; downstream references are redirected and surviving output rows are renumbered when LIMIT removal occurs. A final LIMIT row preserves its resolved base as the effective final query, using an audited synthetic final alias when required. Valid `/freq=N` is removed; `freq=1` is redundant and `freq>1` is explicitly audited as recall broadening. Safe quoted wildcard phrases are rendered using PubMed's phrase-level field-tag form rather than automatically splitting the words with Boolean `AND`.
+For v21, a valid whole-row `limit N to ...` is intentionally reduced to its underlying row `N`; downstream references are redirected and surviving output rows are renumbered when LIMIT removal occurs. A final LIMIT row preserves its resolved base as the effective final query, using an audited synthetic final alias when required. Valid `/freq=N` is removed; `freq=1` is redundant and `freq>1` is explicitly audited as recall broadening. Pure numeric Ovid database-update rows using `.ed.`, `.dt.`, `.ed,dt.` or `.dt,ed.` are discarded automatically. Safe quoted wildcard phrases are rendered using PubMed's phrase-level field-tag form rather than automatically splitting the words with Boolean `AND`.
 
 The one-line query resolver does not alter these v21 conversion semantics. It operates only after conversion and validation, recursively expands the final dependency graph, preserves Boolean grouping with parentheses, and rejects unresolved/cyclic line references rather than guessing.
 
@@ -135,4 +135,4 @@ Uploads are accepted as bytes, signature-checked, size-limited, processed in a c
 
 See [`CITATION.cff`](CITATION.cff). Project code is Apache-2.0; MeSH terminology remains subject to NLM terms and is not relicensed by this project. See [`NOTICE`](NOTICE).
 
-Software version: **0.1.0**. Conversion ruleset: **v21**. The v21 label identifies the conversion semantics, not the product name.
+Software version: **0.1.2**. Conversion ruleset: **v21**. The v21 label identifies the conversion semantics, not the product name.
