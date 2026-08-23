@@ -12,5 +12,5 @@ __all__ = [
     "convert_strategy",
     "parse_strategy_text",
 ]
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 RULESET_VERSION = "v21"
