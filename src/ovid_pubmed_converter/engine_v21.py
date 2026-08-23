@@ -2,7 +2,8 @@
 
 The mature v20 implementation remains in ``engine``. This module adds only
 approved v21 semantics: Ovid /freq handling, LIMIT-row classification helpers,
-and PubMed-safe grouped wildcard-phrase rendering after v20 canonicalisation.
+Ovid database-update date-filter removal, and PubMed-safe grouped wildcard-
+phrase rendering after v20 canonicalisation.
 """
 
 import re
@@ -95,6 +96,26 @@ def rewrite_hash_line_references(expr: str, mapping: dict[int, int]) -> str:
     )
 
 
+def is_pure_ovid_database_update_date_line(line: str) -> bool:
+    """Identify a pure numeric Ovid MEDLINE database-update date filter.
+
+    v21 treats whole rows using ``.ed.``, ``.dt.``, ``.ed,dt.`` or
+    ``.dt,ed.`` as update-search bookkeeping only when the expression before
+    the suffix contains numeric date prefixes, ``*``, parentheses, ``OR`` and
+    whitespace, with no clinical terms or other fields.
+    """
+    normalized = normalize_unicode(line).strip()
+    match = re.fullmatch(
+        r"(?P<body>.+?)\s*\.\s*(?:ed|dt|ed\s*,\s*dt|dt\s*,\s*ed)\s*\.?",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if match is None:
+        return False
+    body = re.sub(r"\bOR\b", " ", match.group("body"), flags=re.IGNORECASE)
+    return re.fullmatch(r"[\d*()\s]+", body) is not None
+
+
 def group_wildcard_fielded_phrases(line: str):
     """Render safe wildcard phrases using PubMed-valid phrase-tag grouping.
 
@@ -162,6 +183,21 @@ def convert_line(
         return MANUAL_REVIEW_ATOM, [
             "malformed_or_unsupported_ovid_limit_line_manual_review_required"
         ]
+
+    if is_pure_ovid_database_update_date_line(line):
+        date_flags = ["ovid_database_update_date_filter_ignored"]
+        if omit_ovid_update_dates:
+            date_flags.append(
+                "external_end_date_applied_instead_of_ovid_update_date_filter"
+            )
+        else:
+            date_flags.extend(
+                [
+                    "ovid_update_date_filter_ignored_without_external_end_date",
+                    "major_semantic_approximation_recall_broadened",
+                ]
+            )
+        return DROP_ATOM, date_flags
 
     line, frequency_flags = strip_ovid_frequency_requirement(line)
     if line == MANUAL_REVIEW_ATOM:
