@@ -89,10 +89,21 @@ def test_invalid_active_limit_fails():
     assert one_line_query(result) == ""
 
 
-def test_wildcard_phrase_dequotes_after_tag_canonicalisation():
+def test_wildcard_phrase_is_grouped_after_tag_canonicalisation():
     result = convert_strategy(parse_strategy_text('1 "breast* cancer*"[Title/Abstract]'))
     assert result.validation_status is ValidationStatus.OK
-    assert result.rows[0].converted == "breast* cancer*[tiab]"
+    assert result.rows[0].converted == "(breast* cancer*)[tiab]"
+    assert (
+        "wildcard_phrase_grouped_field_tag_preserved:breast* cancer*[tiab]"
+        in result.rows[0].audit_flags
+    )
+
+
+def test_three_word_wildcard_phrase_is_grouped_without_boolean_separators():
+    result = convert_strategy(parse_strategy_text('1 "A* B* C*".tw.'))
+    assert result.validation_status is ValidationStatus.OK
+    assert result.rows[0].converted == "(A* B* C*)[tw]"
+    assert " AND " not in result.rows[0].converted
 
 
 def test_literal_or_in_wildcard_phrase_keeps_quotes():
