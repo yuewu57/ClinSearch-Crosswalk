@@ -9,7 +9,6 @@ from ovid_pubmed_converter.web_service import (
     convert_paste,
     convert_rtf,
     download_payloads,
-    has_eligible_update_date_construct,
     user_facing_validation_error,
     user_facing_warning,
 )
@@ -57,7 +56,7 @@ def test_streamlit_application_imports_without_errors():
     assert not app.text_input
 
     app.text_area[0].set_value("1 (202401* or 2025*).ed,dt.").run()
-    assert [field.label for field in app.text_input] == ["External source-search end date"]
+    assert not app.text_input
 
 
 def test_web_resolver_uses_bundled_cache_in_exact_online_mode():
@@ -151,12 +150,6 @@ def test_ambiguous_unnumbered_medline_rtf_is_rejected():
     assert "line numbers were missing" in message
     assert "could not be identified safely" in message
     assert download_payloads(result)["pubmed_query.txt"] == b""
-
-
-def test_end_date_advanced_option_detection_is_specific_to_ed_dt():
-    assert not has_eligible_update_date_construct("1 asthma.tw.")
-    assert not has_eligible_update_date_construct("1 asthma.tw. or 2025.ed,dt.")
-    assert has_eligible_update_date_construct("1 (202401* or 2025*).ed,dt.")
 
 
 def test_ambiguous_standalone_rtf_has_clear_user_error():
