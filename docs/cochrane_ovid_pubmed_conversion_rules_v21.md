@@ -131,14 +131,17 @@ The synthetic alias is audited explicitly.
 
 ## 4. Wildcard-bearing quoted phrases
 
-After PubMed field tags have been canonicalised, a safe quoted multi-word free-text phrase containing `*` may have its quotation marks removed while retaining a single phrase-level field tag.
+After PubMed field tags have been canonicalised, a safe quoted multi-word free-text phrase containing `*` is rendered as one **parenthesized phrase unit** followed by one field tag.
 
 ```text
 "breast* cancer*"[Title/Abstract]
-→ breast* cancer*[tiab]
+→ (breast* cancer*)[tiab]
 
 "renal failure*"[Text Word]
-→ renal failure*[tw]
+→ (renal failure*)[tw]
+
+"A* B* C*"[Text Word]
+→ (A* B* C*)[tw]
 ```
 
 The approved canonical free-text tags for this rule are:
@@ -147,11 +150,48 @@ The approved canonical free-text tags for this rule are:
 [ti] [tiab] [tw] [all] [ta]
 ```
 
-This is preferred to splitting the phrase into separately fielded Boolean atoms because PubMed supports wildcard phrase searching with a trailing field tag, and the phrase-level form better preserves source semantics.
+The rule deliberately preserves the internal spaces and does **not** insert Boolean separators between phrase tokens. It also does **not** duplicate the field tag across individual words. Therefore:
+
+```text
+"A* B* C*"[tw]
+```
+
+must become:
+
+```text
+(A* B* C*)[tw]
+```
+
+and must **not** become either:
+
+```text
+A* B* C*[tw]
+```
+
+or:
+
+```text
+A*[tw] AND B*[tw] AND C*[tw]
+```
+
+The parenthesized form is used to make the intended multi-word search unit explicit while retaining a single trailing PubMed field tag.
+
+The transformation is audited as:
+
+```text
+wildcard_phrase_grouped_field_tag_preserved:<phrase>[<tag>]
+```
 
 ### 4.1 Literal Boolean-token protection
 
 If a wildcard phrase reaching this stage still contains a literal standalone `OR`, `NOT`, or surviving `AND`, its quotes are retained so phrase text cannot be reinterpreted as PubMed Boolean syntax.
+
+For example:
+
+```text
+"law or polic*".tw.
+→ "law or polic*"[tw]
+```
 
 ### 4.2 Inherited Ovid runtime-stopword behaviour
 
@@ -194,7 +234,8 @@ A v21 implementation must regression-test at minimum:
 - reference redirection through removed LIMIT rows;
 - consecutive renumbering after LIMIT removal;
 - unchanged v20 numbering when no valid LIMIT row is removed;
-- wildcard phrases with canonical and readable field tags;
+- wildcard phrases rendered as `(A* B* C*)[xx]` with one trailing field tag;
+- no inserted Boolean separators inside grouped wildcard phrases;
 - literal Boolean words inside surviving wildcard phrases;
 - inherited `"research and develop*" → (research AND develop*)` stopword behaviour;
 - final-query dependency closure and retrieval gating.
@@ -210,7 +251,9 @@ malformed /freq      → manual review
 limit N to condition → ignore condition; alias to N; audit broadening
 valid LIMIT removal  → redirect references and consecutively renumber output
 final LIMIT           → preserve its resolved base as effective final query
-"A* B*"[xx]          → A* B*[xx] when safe, not A*[xx] AND B*[xx]
+"A* B* C*"[xx]       → (A* B* C*)[xx] when safe
 ```
+
+For the final wildcard rule, the grouped phrase is one fielded unit: no Boolean separator is inserted between the words and the tag is not repeated per token.
 
 Automatic numbering of wholly unnumbered multi-row input is deliberately outside the v21 ruleset and may be implemented separately by the online converter/input-adapter layer.

@@ -2,7 +2,7 @@
 
 The mature v20 implementation remains in ``engine``. This module adds only
 approved v21 semantics: Ovid /freq handling, LIMIT-row classification helpers,
-and PubMed wildcard-phrase dequoting after v20 canonicalisation.
+and PubMed grouped wildcard-phrase rendering after v20 canonicalisation.
 """
 
 import re
@@ -54,7 +54,7 @@ def strip_ovid_frequency_requirement(line: str):
 
 
 def parse_ovid_limit_alias(line: str) -> int | None:
-    """Return the source row referenced by a complete ``limit N to ...`` row."""
+    """Return the source row referenced by a complete Ovid ``limit N to ...`` row."""
     match = re.fullmatch(
         r"\s*limit\s+#?(?P<base>\d+)\s+to\s+(?P<condition>\S(?:.*\S)?)\s*",
         normalize_unicode(line),
@@ -95,14 +95,19 @@ def rewrite_hash_line_references(expr: str, mapping: dict[int, int]) -> str:
     )
 
 
-def dequote_wildcard_fielded_phrases(line: str):
-    """Remove quotes from safe wildcard phrases after PubMed tag canonicalisation.
+def group_wildcard_fielded_phrases(line: str):
+    """Render safe wildcard phrases as one grouped PubMed fielded unit.
 
-    Literal OR/NOT (and any surviving AND) keep the phrase quoted to avoid
-    reinterpreting phrase text as PubMed Boolean syntax. Ovid runtime stopword
-    handling occurs earlier in v20, so e.g. ``research and develop*`` may
-    already have become ``research[tw] AND develop*[tw]``; v21 intentionally
-    preserves that inherited recall-oriented behaviour.
+    v20 may emit a wildcard-bearing multi-word free-text atom in quotes, for
+    example ``\"minimal change nephr*\"[tw]``. v21 preserves the internal word
+    sequence and the single trailing field tag, but removes the phrase quotes
+    and adds explicit grouping instead::
+
+        \"A* B* C*\"[tw] -> (A* B* C*)[tw]
+
+    No Boolean separator is inserted between the words and the field tag is not
+    duplicated per token. Literal standalone Boolean words remain quoted so
+    phrase text cannot be reinterpreted as PubMed Boolean syntax.
     """
     flags: list[str] = []
     pattern = re.compile(
@@ -126,8 +131,8 @@ def dequote_wildcard_fielded_phrases(line: str):
                 f"{boolean_token.group(1).upper()}:{phrase}[{tag}]"
             )
             return f'"{phrase}"[{tag}]'
-        flags.append(f"wildcard_phrase_quotes_removed_field_tag_preserved:{phrase}[{tag}]")
-        return f"{phrase}[{tag}]"
+        flags.append(f"wildcard_phrase_grouped_field_tag_preserved:{phrase}[{tag}]")
+        return f"({phrase})[{tag}]"
 
     return pattern.sub(repl, line), flags
 
@@ -161,5 +166,5 @@ def convert_line(
         known_line_numbers=known_line_numbers,
         omit_ovid_update_dates=omit_ovid_update_dates,
     )
-    converted, wildcard_flags = dequote_wildcard_fielded_phrases(converted)
+    converted, wildcard_flags = group_wildcard_fielded_phrases(converted)
     return converted, list(dict.fromkeys(frequency_flags + flags + wildcard_flags))
