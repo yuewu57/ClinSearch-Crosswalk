@@ -2,7 +2,7 @@
 
 from dataclasses import replace
 
-from ovid_pubmed_converter import engine
+from ovid_pubmed_converter import engine_v21
 from ovid_pubmed_converter.core import convert_strategy
 from ovid_pubmed_converter.mesh import load_mesh_resolver, production_cache_path
 from ovid_pubmed_converter.outputs import (
@@ -17,9 +17,12 @@ from ovid_pubmed_converter.rtf import parse_rtf_bytes
 
 
 def has_eligible_update_date_construct(text: str) -> bool:
-    """Return whether paste text contains an eligible pure .ed,dt. row."""
+    """Return whether paste text contains a v21 pure database-update date row."""
     strategy = parse_strategy_text(text)
-    return any(engine.is_pure_ovid_ed_dt_update_line(row.source) for row in strategy.rows)
+    return any(
+        engine_v21.is_pure_ovid_database_update_date_line(row.source)
+        for row in strategy.rows
+    )
 
 
 def user_facing_validation_error(error: str) -> str:
@@ -64,8 +67,8 @@ def user_facing_warning(warning: str) -> str:
     if warning == "major_semantic_approximation_recall_broadened":
         return (
             "At least one Ovid construct was intentionally broadened rather than reproduced "
-            "exactly in PubMed. Check the line-by-line audit; this commonly occurs when a "
-            "LIMIT condition or /freq>1 restriction is omitted."
+            "exactly in PubMed. Check the line-by-line audit; this can occur when a LIMIT, "
+            "/freq>1, or database-update date restriction is omitted."
         )
     if warning.startswith("mesh_resolution_fallback_to_source_heading:"):
         return (
