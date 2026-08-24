@@ -1,21 +1,22 @@
 # Cochrane Ovid MEDLINE-to-PubMed Conversion Rules — v21
 
 **Ruleset:** v21  
-**Date:** 23 August 2026  
+**Date:** 24 August 2026  
 **Base specification:** v20  
-**Status:** approved v21 delta specification.
+**Status:** approved v21 delta specification with maintenance/conformance corrections.
 
 v21 preserves every approved v20 rule except where this document explicitly overrides it. The v20 rule document therefore remains the normative base specification and this document is read together with it.
 
 ## 1. Scope of v21
 
-v21 adds five narrowly scoped behaviours:
+v21 adds six narrowly scoped behaviours:
 
 1. Ovid `/freq=N` occurrence-frequency modifiers;
 2. whole-row Ovid `limit N to ...` constructs;
 3. robust PubMed handling of quoted wildcard-bearing free-text phrases;
 4. consequential row-reference rewriting and renumbering required by ignored LIMIT rows;
-5. removal of pure numeric Ovid MEDLINE database-update date filters using `.ed.`, `.dt.`, `.ed,dt.` or `.dt,ed.`.
+5. removal of pure numeric Ovid MEDLINE database-update date filters using `.ed.`, `.dt.`, `.ed,dt.` or `.dt,ed.`;
+6. preservation of complete inline Ovid multi-field free-text suffixes such as `.ti,ab.` so they are mapped as one field set rather than split into malformed residual syntax.
 
 v21 does **not** add automatic repair or numbering of a completely unnumbered multi-row MEDLINE strategy. That usability feature is reserved for the online/input-adapter layer, where physical line wrapping can be distinguished from logical strategy rows without changing the conversion ruleset.
 
@@ -205,7 +206,63 @@ The following is therefore accepted and intentional:
 
 This is an inherited recall-oriented approximation, not a v21 defect.
 
-## 5. Pure Ovid MEDLINE database-update date filters
+## 5. Inline Ovid multi-field free-text suffix integrity
+
+An inline Ovid free-text field list must be treated as one indivisible suffix through stopword processing, phrase quotation and field conversion. In particular, `.ti,ab.` must not be parsed as `.ti.` followed by residual `,ab.` text.
+
+The approved mapping remains the inherited v20 multi-field rule:
+
+```text
+.ti,ab.                 → [tiab]
+.ti,kf.                 → [tiab]
+.ab,kf.                 → [tiab]
+.ti,ab,kf.              → [tiab]
+```
+
+This applies both when the fielded atom is the whole row and when it occurs inside a longer Boolean expression.
+
+For example:
+
+```text
+exp Masks/ or surgical mask.ti,ab. or respirator.ti,ab.
+```
+
+must include:
+
+```text
+"Masks"[mh] OR "surgical mask"[tiab] OR respirator[tiab]
+```
+
+and must **not** contain malformed split-field remnants such as:
+
+```text
+"surgical mask"[ti],ab.
+"surgical mask".ti.,ab.
+```
+
+The same principle applies to longer supported free-text field lists such as `.ti,ab,kf.`. The complete list is preserved until the existing field-selection rule chooses the canonical PubMed tag.
+
+### 5.1 Stopword handling is preserved
+
+This maintenance correction does not bypass the inherited Ovid runtime-stopword rule. For example:
+
+```text
+quality of life.ti,ab.
+```
+
+continues to follow the approved stopword behaviour and becomes:
+
+```text
+(quality[tiab] AND life[tiab])
+```
+
+### 5.2 Validation backstop
+
+Any post-conversion split-field remnant such as `[ti],ab.` or `.ti.,ab.` is a converter defect, not valid PubMed output. v21 must prevent such a row from being treated as validated executable output; the implementation therefore includes a regression/validation backstop that forces manual review if such a remnant survives conversion.
+
+This change is a **conformance correction**, not a new retrieval approximation: the intended `.ti,ab. → [tiab]` semantics were already approved in v20 and remain unchanged in v21.
+
+## 6. Pure Ovid MEDLINE database-update date filters
 
 Ovid MEDLINE `.ed.` and `.dt.` fields are record-processing/update dates rather than clinical search concepts. v21 therefore removes a whole row as database-update bookkeeping when all of the following are true:
 
@@ -230,7 +287,7 @@ The base audit flag is:
 ovid_database_update_date_filter_ignored
 ```
 
-### 5.1 External `End_date` supplied
+### 6.1 External `End_date` supplied
 
 When the source strategy has an external `End_date`, that metadata remains the retrieval-date boundary and the removed Ovid update-date row also carries:
 
@@ -238,7 +295,7 @@ When the source strategy has an external `End_date`, that metadata remains the r
 external_end_date_applied_instead_of_ovid_update_date_filter
 ```
 
-### 5.2 No external `End_date`
+### 6.2 No external `End_date`
 
 The pure update-date row is still removed, but the loss of that source restriction is an intentional recall broadening and is audited with:
 
@@ -247,7 +304,7 @@ ovid_update_date_filter_ignored_without_external_end_date
 major_semantic_approximation_recall_broadened
 ```
 
-### 5.3 Boolean dependency handling
+### 6.3 Boolean dependency handling
 
 The normal Cochrane update-search form is an `AND` wrapper:
 
@@ -271,7 +328,7 @@ An `OR` or `NOT` reference to a removed update-date row is not treated as a norm
 ovid_update_date_reference_in_or_not_manual_review_required:#N
 ```
 
-### 5.4 Mixed or non-numeric date-field expressions
+### 6.4 Mixed or non-numeric date-field expressions
 
 A row such as:
 
@@ -281,7 +338,7 @@ A row such as:
 
 is outside this rule and must not be silently discarded. Existing conversion/validation behavior applies.
 
-## 6. Audit-row statuses added by v21
+## 7. Audit-row statuses added by v21
 
 In addition to the v20 audit-row statuses, v21 uses:
 
@@ -300,7 +357,15 @@ A removed pure update-date row carries `ovid_database_update_date_filter_ignored
 
 Invalid LIMIT rows and unsafe OR/NOT update-date dependencies remain reviewable rows rather than being silently discarded.
 
-## 7. Regression requirements
+The multi-field suffix conformance correction may additionally emit an exact-processing audit event such as:
+
+```text
+v21_inline_multifield_suffix_preserved:ti,ab
+```
+
+This is informational and does not indicate semantic broadening.
+
+## 8. Regression requirements
 
 A v21 implementation must regression-test at minimum:
 
@@ -316,6 +381,10 @@ A v21 implementation must regression-test at minimum:
 - no inserted Boolean separators inside grouped wildcard phrases;
 - literal Boolean words inside surviving wildcard phrases;
 - inherited `"research and develop*" → (research AND develop*)` stopword behaviour;
+- inline `.ti,ab.` terms inside longer Boolean expressions mapping to `[tiab]`;
+- supported longer multi-field lists such as `.ti,ab,kf.` remaining intact until canonical tag selection;
+- stopword-bearing inline multi-field phrases retaining the same v20 stopword semantics;
+- no residual malformed `[ti],ab.`, `.ti.,ab.`, or equivalent split-field forms in validated output;
 - pure `.ed.`, `.dt.`, `.ed,dt.` and `.dt,ed.` numeric update-date removal;
 - update-date removal with and without external `End_date`;
 - CD005595-style `#concept AND #date` wrapper simplification;
@@ -324,7 +393,7 @@ A v21 implementation must regression-test at minimum:
 - mixed/non-numeric date-field expressions not silently discarded;
 - final-query dependency closure and retrieval gating.
 
-## 8. Frozen v21 decisions
+## 9. Frozen v21 decisions
 
 The following are frozen for v21:
 
@@ -334,14 +403,17 @@ The following are frozen for v21:
 malformed /freq                 → manual review
 limit N to condition            → ignore condition; alias to N; audit broadening
 valid LIMIT removal             → redirect references and consecutively renumber output
-final LIMIT                      → preserve its resolved base as effective final query
+final LIMIT                     → preserve its resolved base as effective final query
 "A* B* C*"[xx]                  → (A* B* C*[xx]) when safe
+inline .ti,ab.                  → preserve whole suffix; map to [tiab]
+inline .ti,ab,kf.               → preserve whole suffix; map to [tiab]
+split [ti],ab. / .ti.,ab.       → must not validate; manual-review backstop
 pure numeric .ed./.dt. row       → discard as database-update bookkeeping
 pure numeric .ed,dt./.dt,ed. row → discard as database-update bookkeeping
 #concept AND #date               → simplify to #concept
 #concept OR/NOT #date            → manual review
 ```
 
-For wildcard phrases, the field tag remains attached to the multi-term phrase inside the outer parentheses. For update-date rows, removal alone does not renumber surviving rows.
+For wildcard phrases, the field tag remains attached to the multi-term phrase inside the outer parentheses. For update-date rows, removal alone does not renumber surviving rows. For inline multi-field free text, the complete Ovid field list remains intact until the canonical PubMed field tag is selected.
 
 Automatic numbering of wholly unnumbered multi-row input is deliberately outside the v21 ruleset and may be implemented separately by the online converter/input-adapter layer.

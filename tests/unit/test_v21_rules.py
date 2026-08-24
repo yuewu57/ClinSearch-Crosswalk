@@ -1,3 +1,4 @@
+from ovid_pubmed_converter import engine_v21
 from ovid_pubmed_converter.core import convert_strategy
 from ovid_pubmed_converter.models import ValidationStatus
 from ovid_pubmed_converter.outputs import one_line_query, strategy_text
@@ -117,6 +118,52 @@ def test_inherited_and_stopword_behaviour_is_accepted():
     result = convert_strategy(parse_strategy_text('1 "research and develop*".tw.'))
     assert result.validation_status is ValidationStatus.OK
     assert result.rows[0].converted == "(research[tw] AND develop*[tw])"
+
+
+def test_inline_tiab_multifield_suffix_is_preserved_inside_boolean_expression():
+    source = (
+        "1 exp Respiratory Protective Devices/ or exp Masks/ or exp N95 Respirators/ "
+        "or surgical mask.ti,ab. or surgical masks.ti,ab. or medical masks.ti,ab. "
+        "or air purifying respirator.ti,ab. or air purifying respirators.ti,ab."
+    )
+    result = convert_strategy(parse_strategy_text(source))
+    assert result.validation_status is ValidationStatus.OK
+    converted = result.rows[0].converted
+    assert '"surgical mask"[tiab]' in converted
+    assert '"surgical masks"[tiab]' in converted
+    assert '"air purifying respirator"[tiab]' in converted
+    assert '"air purifying respirators"[tiab]' in converted
+    assert "[ti],ab." not in converted
+    assert ".ti.,ab." not in converted
+    assert "v21_inline_multifield_suffix_preserved:ti,ab" in result.rows[0].audit_flags
+
+
+def test_inline_tiab_multifield_preserves_stopword_rule():
+    result = convert_strategy(
+        parse_strategy_text("1 quality of life.ti,ab. or surgical mask.ti,ab.")
+    )
+    assert result.validation_status is ValidationStatus.OK
+    assert result.rows[0].converted == (
+        '(quality[tiab] AND life[tiab]) OR "surgical mask"[tiab]'
+    )
+
+
+def test_inline_tiab_kf_maps_complete_field_set():
+    result = convert_strategy(
+        parse_strategy_text("1 cancer.ti,ab,kf. or asthma.ab.")
+    )
+    assert result.validation_status is ValidationStatus.OK
+    assert result.rows[0].converted == "cancer[tiab] OR asthma[tiab]"
+    assert "v21_inline_multifield_suffix_preserved:ti,ab,kf" in result.rows[0].audit_flags
+
+
+def test_split_multifield_residue_detector_rejects_known_malformed_forms():
+    assert engine_v21.split_multifield_residue_flags('"surgical mask"[ti],ab.') == [
+        "split_ovid_multifield_suffix_after_pubmed_tag"
+    ]
+    assert engine_v21.split_multifield_residue_flags('"surgical mask".ti.,ab.') == [
+        "split_ovid_multifield_suffix_before_pubmed_tag"
+    ]
 
 
 def test_update_date_filter_is_removed_with_external_end_date():

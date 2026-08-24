@@ -2,8 +2,10 @@
 
 ## Project authority
 
-`docs/cochrane_ovid_pubmed_conversion_rules_v20.md` is the normative
-specification for conversion semantics.
+`docs/cochrane_ovid_pubmed_conversion_rules_v20.md` is the normative base
+specification for conversion semantics. For the v21 implementation,
+`docs/cochrane_ovid_pubmed_conversion_rules_v21.md` is the approved delta and
+must be read together with the v20 base specification.
 
 Do not modify conversion behaviour merely to simplify implementation.
 

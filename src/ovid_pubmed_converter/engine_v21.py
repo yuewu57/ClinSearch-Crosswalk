@@ -2,8 +2,9 @@
 
 The mature v20 implementation remains in ``engine``. This module adds only
 approved v21 semantics: Ovid /freq handling, LIMIT-row classification helpers,
-Ovid database-update date-filter removal, and PubMed-safe grouped wildcard-
-phrase rendering after v20 canonicalisation.
+Ovid database-update date-filter removal, PubMed-safe grouped wildcard-phrase
+rendering, and the v21 conformance fix for inline Ovid multi-field free-text
+suffixes such as ``.ti,ab.``.
 """
 
 import re
@@ -11,7 +12,10 @@ import re
 from .engine import (
     DROP_ATOM,
     MANUAL_REVIEW_ATOM,
+    convert_field_tags,
+    convert_ovid_stopword_free_text,
     normalize_unicode,
+    quote_free_text_field_expressions,
     tidy_spaces,
 )
 from .engine import convert_line as _convert_line_v20
@@ -19,6 +23,79 @@ from .engine import convert_line as _convert_line_v20
 OUTPUT_VERSION = "v21"
 # MeSH semantics did not change in v21; reuse the maintained v20 cache.
 DEFAULT_MESH_CACHE_NAME = "mesh_resolution_cache_v20_YW_16082026.json"
+
+
+OVID_FREE_TEXT_FIELD = r"(?:ti|ab|tw|kf|mp|af|jw|jn|ot|hw)"
+INLINE_OVID_MULTIFIELD_RE = re.compile(
+    r'(?<![A-Za-z0-9])'
+    r'(?P<expr>'
+    r'"[^"\n]+"'
+    r'|'
+    r'(?!(?:and|or|not|adj\d*|next)\b)'
+    r'[A-Za-z0-9*?$#\047\-]+'
+    r'(?:\s+(?!(?:and|or|not|adj\d*|next)\b)[A-Za-z0-9*?$#\047\-]+)*'
+    r')'
+    r'\s*\.(?P<fields>'
+    + OVID_FREE_TEXT_FIELD
+    + r'(?:\s*,\s*'
+    + OVID_FREE_TEXT_FIELD
+    + r')+)\s*\.?',
+    flags=re.IGNORECASE,
+)
+
+
+def preserve_inline_ovid_multifield_free_text(line: str):
+    """Pre-convert inline Ovid multi-field free-text atoms safely.
+
+    The frozen v20 engine correctly maps a complete ``.ti,ab.`` field list
+    when it sees the atom in isolation, but an inherited inline matcher can
+    otherwise split the first field from the remainder inside a longer Boolean
+    expression, producing malformed output such as ``[ti],ab.``.
+
+    v21 isolates each atomic multi-field object, applies the inherited v20
+    stopword/quotation/field mapping to that object, and then passes the whole
+    expression into the ordinary v20 converter. This changes no approved field
+    semantics; it only preserves the complete field list until the existing
+    multifield mapper is applied.
+    """
+    flags: list[str] = []
+
+    def repl(match: re.Match) -> str:
+        fields = match.group("fields")
+        fragment = f"{match.group('expr')}.{fields}."
+        stopworded, stopword_flags = convert_ovid_stopword_free_text(fragment)
+        quoted = quote_free_text_field_expressions(stopworded)
+        converted, field_flags = convert_field_tags(quoted)
+        flags.extend(stopword_flags)
+        flags.extend(field_flags)
+        flags.append(
+            "v21_inline_multifield_suffix_preserved:"
+            + re.sub(r"\s+", "", fields).lower()
+        )
+        return converted
+
+    converted = INLINE_OVID_MULTIFIELD_RE.sub(repl, line)
+    return converted, list(dict.fromkeys(flags))
+
+
+def split_multifield_residue_flags(line: str) -> list[str]:
+    """Detect malformed remnants of a split Ovid multi-field suffix."""
+    flags: list[str] = []
+    if re.search(
+        r"\[(?:ti|tiab|tw|all|ta)\]\s*,\s*"
+        r"(?:ti|ab|tw|kf|mp|af|jw|jn|ot|hw)\b",
+        line,
+        flags=re.IGNORECASE,
+    ):
+        flags.append("split_ovid_multifield_suffix_after_pubmed_tag")
+    if re.search(
+        r"\.(?:ti|ab|tw|kf|mp|af|jw|jn|ot|hw)\.\s*,\s*"
+        r"(?:ti|ab|tw|kf|mp|af|jw|jn|ot|hw)\b",
+        line,
+        flags=re.IGNORECASE,
+    ):
+        flags.append("split_ovid_multifield_suffix_before_pubmed_tag")
+    return flags
 
 
 def strip_ovid_frequency_requirement(line: str):
@@ -203,10 +280,25 @@ def convert_line(
     if line == MANUAL_REVIEW_ATOM:
         return line, frequency_flags
 
+    line, multifield_flags = preserve_inline_ovid_multifield_free_text(line)
     converted, flags = _convert_line_v20(
         line,
         known_line_numbers=known_line_numbers,
         omit_ovid_update_dates=omit_ovid_update_dates,
     )
     converted, wildcard_flags = group_wildcard_fielded_phrases(converted)
-    return converted, list(dict.fromkeys(frequency_flags + flags + wildcard_flags))
+    residue_flags = split_multifield_residue_flags(converted)
+    if residue_flags:
+        return MANUAL_REVIEW_ATOM, list(
+            dict.fromkeys(
+                frequency_flags
+                + multifield_flags
+                + flags
+                + wildcard_flags
+                + ["v21_split_multifield_suffix_manual_review_required"]
+                + residue_flags
+            )
+        )
+    return converted, list(
+        dict.fromkeys(frequency_flags + multifield_flags + flags + wildcard_flags)
+    )
