@@ -1,0 +1,52 @@
+name: Publish project page
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "scripts/build_public_site.py"
+      - "src/ovid_pubmed_converter/__init__.py"
+      - ".github/workflows/pages.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.event.repository.visibility == 'public' &&
+      vars.PUBLIC_RELEASE_APPROVED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/configure-pages@v5
+      - name: Build only the public landing page
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: python scripts/build_public_site.py
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _public_site
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

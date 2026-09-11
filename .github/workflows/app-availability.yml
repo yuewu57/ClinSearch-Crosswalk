@@ -1,0 +1,40 @@
+name: App availability
+
+on:
+  workflow_dispatch:
+  schedule:
+    # UTC: 00:17, 08:17 and 16:17; best-effort scheduling, not guaranteed uptime.
+    - cron: "17 */8 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-availability
+  cancel-in-progress: false
+
+jobs:
+  check:
+    # Nothing contacts the hosted app until the owner explicitly opts in.
+    if: >-
+      github.event.repository.visibility == 'public' &&
+      vars.MONITORING_ENABLED == 'true' &&
+      vars.MONITORING_POLICY_CONFIRMED == 'true' &&
+      vars.APP_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      APP_URL: ${{ vars.APP_URL }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install browser checker
+        run: |
+          python -m pip install -r requirements-monitor.txt
+          python -m playwright install --with-deps chromium
+      - name: Check interactive interface without submitting a query
+        run: python scripts/check_app_availability.py --timeout 90

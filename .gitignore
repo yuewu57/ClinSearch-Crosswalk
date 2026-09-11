@@ -7,3 +7,7 @@ htmlcov/
 *.py[cod]
 .streamlit/secrets.toml
 *.egg-info/
+_public_site/
+.env
+.env.*
+!.env.example

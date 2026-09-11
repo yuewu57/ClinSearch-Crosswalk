@@ -1,10 +1,10 @@
 cff-version: 1.2.0
 title: "Evidentia-CSC: a Clinical Search Convertor: Ovid MEDLINE to PubMed"
-message: "If you use this software, please cite this repository and release."
+message: "Please cite the software version used; add the associated paper once available."
 type: software
-version: 0.1.0
-date-released: 2026-08-16
-license: Apache-2.0
+version: 0.1.2
+license: PolyForm-Noncommercial-1.0.0
 authors:
   - name: "Evidentia-convertor contributors"
-repository-code: "https://github.com/<owner>/<repository>"
+repository-code: "https://github.com/yuewu57/Evidentia-CSC"
+# Before publication, confirm the author list and add the actual release date and DOI.

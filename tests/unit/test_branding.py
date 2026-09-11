@@ -11,8 +11,10 @@ from web.branding import (
     STRATHCLYDE_LOGO_PATH,
 )
 
+ROOT = Path(__file__).parents[2]
 
-def test_presentation_brand_hierarchy_is_explicit():
+
+def test_presentation_identity_and_attribution_are_preserved():
     assert BRAND_NAME == "Que²"
     assert PRODUCT_NAME == "Evidentia-CSC: a Clinical Search Convertor"
     assert FUNCTIONAL_SUBTITLE == "Ovid MEDLINE → PubMed"
@@ -20,30 +22,29 @@ def test_presentation_brand_hierarchy_is_explicit():
     assert INSTITUTIONAL_AFFILIATION == "University of Strathclyde Glasgow"
 
 
-def test_co_brand_assets_use_the_existing_repository_images():
-    assert BRAND_ASSET_DIRECTORY == Path(__file__).parents[2] / "assets" / "brand"
+def test_legacy_brand_paths_remain_metadata_not_required_assets():
+    assert BRAND_ASSET_DIRECTORY == ROOT / "assets" / "brand"
     assert QUE2_LOGO_PATH == BRAND_ASSET_DIRECTORY / "Que2_brand.png"
     assert STRATHCLYDE_LOGO_PATH == BRAND_ASSET_DIRECTORY / "strath_brand.jpg"
-    assert QUE2_LOGO_PATH.name == "Que2_brand.png"
-    assert STRATHCLYDE_LOGO_PATH.name == "strath_brand.jpg"
-    assert QUE2_LOGO_PATH.is_file()
-    assert STRATHCLYDE_LOGO_PATH.is_file()
+    # Public release snapshots may omit brand images entirely.
 
 
-def test_static_site_uses_compact_top_brand_row_before_product_title():
-    index = (Path(__file__).parents[2] / "site" / "index.html").read_text(encoding="utf-8")
+def test_public_app_does_not_load_or_render_logos():
+    app = (ROOT / "web/app.py").read_text(encoding="utf-8")
+    for token in ("b64encode", "QUE2_LOGO_PATH", "STRATHCLYDE_LOGO_PATH", "<img"):
+        assert token not in app
+    assert "st.title(PRODUCT_NAME)" in app
+    assert "INSTITUTIONAL_AFFILIATION" in app
+    assert "PolyForm Noncommercial" in app
+    assert "CITATION.cff" in app
 
-    brand_row_position = index.index('class="brand-row"')
-    que2_position = index.index('../assets/brand/Que2_brand.png')
-    affiliation_position = index.index('class="institutional-affiliation"')
-    affiliation_label_position = index.index('class="affiliation-label"')
-    strathclyde_position = index.index('../assets/brand/strath_brand.jpg')
-    title_position = index.index("<h1>Evidentia-CSC: a Clinical Search Convertor</h1>")
-    subtitle_position = index.index('<p class="subtitle">Ovid MEDLINE → PubMed</p>')
 
-    assert brand_row_position < que2_position < title_position
-    assert brand_row_position < affiliation_position < affiliation_label_position
-    assert affiliation_label_position < strathclyde_position < title_position
-    assert title_position < subtitle_position
-    assert 'class="co-brand"' not in index
-    assert 'class="brand-separator"' not in index
+def test_public_site_has_neutral_title_with_credit_and_citation():
+    index = (ROOT / "site/index.html").read_text(encoding="utf-8")
+    assert "<h1>Evidentia-CSC: a Clinical Search Convertor</h1>" in index
+    assert '<p class="subtitle">Ovid MEDLINE → PubMed</p>' in index
+    assert "<img" not in index
+    assert "assets/brand/" not in index
+    assert "University of Strathclyde Glasgow" in index
+    assert "CITATION.cff" in index
+    assert "PolyForm Noncommercial" in index
