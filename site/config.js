@@ -1,4 +1,6 @@
-// Deployment configuration: set this once the hosted Streamlit URL is known.
-window.QUE2_SITE_CONFIG = {
+// Used for local preview; the Pages workflow supplies the verified APP_URL.
+window.EVIDENTIA_SITE_CONFIG = {
   converterUrl: "",
+  softwareVersion: "0.1.2",
+  rulesetVersion: "v21",
 };

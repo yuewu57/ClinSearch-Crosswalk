@@ -3,49 +3,50 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Evidentia converts Ovid MEDLINE strategies into auditable PubMed queries.">
-    <title>Que² · Evidentia-CSC: a Clinical Search Convertor</title>
+    <meta name="description" content="Evidentia-CSC converts Ovid MEDLINE strategies into auditable PubMed queries.">
+    <title>Evidentia-CSC: a Clinical Search Convertor</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <main>
       <header>
-        <div class="brand-row" aria-label="QueSquared and University of Strathclyde affiliation">
-          <div class="primary-brand">
-            <img
-              src="../assets/brand/Que2_brand.png"
-              alt="QueSquared — Intelligence Compounded"
-            >
-          </div>
-          <div class="institutional-affiliation">
-            <p class="affiliation-label">Institutional affiliation</p>
-            <img
-              src="../assets/brand/strath_brand.jpg"
-              alt="University of Strathclyde Glasgow"
-            >
-          </div>
-        </div>
         <h1>Evidentia-CSC: a Clinical Search Convertor</h1>
         <p class="subtitle">Ovid MEDLINE → PubMed</p>
-        <p class="version">Software 0.1.0 · Conversion ruleset v20</p>
+        <p class="version" data-version>Software 0.1.2 · Conversion ruleset v21</p>
       </header>
-
       <section aria-labelledby="introduction">
         <h2 id="introduction">Transparent strategy conversion</h2>
         <p class="lede">
-          Convert Ovid MEDLINE search strategies into transparent, auditable PubMed queries.
-          Evidentia applies a deterministic conversion ruleset to pasted strategies and RTF
-          strategy input.
+          Convert pasted or RTF Ovid MEDLINE search strategies into PubMed syntax using
+          a deterministic, recall-oriented ruleset, with validation and line-by-line audit.
         </p>
         <nav aria-label="Project links">
-          <a class="primary" data-converter-link>Launch Convertor</a>
-          <a href="https://github.com/yuewu57/Evidentia-convertor#readme">Documentation</a>
-          <a href="https://github.com/yuewu57/Evidentia-convertor/blob/main/docs/methodology.md">Methodology</a>
-          <a href="https://github.com/yuewu57/Evidentia-convertor">GitHub</a>
+          <a class="primary" data-converter-link aria-disabled="true">Launch Convertor</a>
+          <a href="https://github.com/yuewu57/Evidentia-CSC#readme">Documentation</a>
+          <a href="https://github.com/yuewu57/Evidentia-CSC/blob/main/docs/methodology.md">Methodology</a>
+          <a href="https://github.com/yuewu57/Evidentia-CSC">Source code</a>
+          <a href="https://github.com/yuewu57/Evidentia-CSC/blob/main/CITATION.cff">Cite this software</a>
         </nav>
-        <p class="deployment-note">
-          The interactive converter is currently a separately hosted Streamlit application.
+        <p class="deployment-note" data-deployment-status>
+          The public converter URL has not been configured yet.
         </p>
+        <p>Review all warnings before retrieval. Local validation does not establish exact
+          retrieval equivalence. Ovid LIMIT and term-frequency restrictions are not
+          automatically reproduced in PubMed.</p>
+      </section>
+      <section aria-labelledby="about">
+        <h2 id="about">About and licensing</h2>
+        <p>Part of Evidentia. Developed by the Evidentia-convertor contributors.
+          Institutional affiliation: University of Strathclyde Glasgow.</p>
+        <p>Source available under the
+          <a href="https://github.com/yuewu57/Evidentia-CSC/blob/main/LICENSE">PolyForm Noncommercial License 1.0.0</a>.
+          Uses outside its permitted purposes require a separate licence from the relevant
+          rights-holder. See the licence, including its expressly permitted organisations.</p>
+        <p>The associated paper and archived software release will be linked when available.</p>
+        <p>Enter search strategies only. Do not upload patient, personal or confidential data.
+          The interactive app is separately hosted on Streamlit Community Cloud and may
+          sleep after inactivity.</p>
+        <p>This independent project is not affiliated with or endorsed by Cochrane, Ovid or NLM.</p>
       </section>
     </main>
     <script src="config.js"></script>

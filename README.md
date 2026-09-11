@@ -6,6 +6,8 @@ Part of Evidentia
 
 A deterministic, rule-based, recall-oriented converter implementing the approved v21 rules. It translates Ovid MEDLINE syntax into PubMed syntax with line-by-line audit and local validation. It is independent of generative AI and is not affiliated with or endorsed by Cochrane, Ovid, or the U.S. National Library of Medicine (NLM).
 
+Source available under **PolyForm Noncommercial License 1.0.0**. Uses outside its permitted purposes require a separate licence from the relevant rights-holder. See [LICENSE](LICENSE), [NOTICE](NOTICE) and [licensing notes](docs/licensing.md). The release-preparation changes require rights-holder approval before publication. This is source-available software, not OSI-approved open source.
+
 ## Purpose and features
 
 - Paste an Ovid MEDLINE strategy or upload one RTF file.
@@ -47,11 +49,13 @@ The one-line query is produced only for a conversion with `ok` validation status
 
 ## Installation and running locally
 
+The proposed public publication repository is `yuewu57/Evidentia-CSC`; it must be created from the approved snapshot before its URLs are advertised. During release preparation, use the existing private development repository.
+
 ### Linux/macOS
 
 ```bash
 git clone <repository-url>
-cd Evidentia-convertor
+cd <repository-directory>
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
@@ -63,7 +67,7 @@ streamlit run web/app.py
 
 ```powershell
 git clone <repository-url>
-cd Evidentia-convertor
+cd <repository-directory>
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
@@ -118,12 +122,9 @@ This software does not test live PubMed retrieval equivalence. Users remain resp
 
 ## Deployment
 
-1. Push this repository to GitHub.
-2. In Streamlit Community Cloud select **Create app**.
-3. Choose the repository and branch.
-4. Set the entry point to `web/app.py`.
-5. Deploy; no secrets or system packages are required for cache-only operation.
-6. Confirm the platform uses Python 3.12 and exercise both fixture-equivalent input modes.
+Follow [the public launch guide](docs/deployment.md). The Python entry point remains `web/app.py`, with Python 3.12. The optional GitHub Pages workflow publishes only the static landing page; it does not run the converter.
+
+A scheduled browser availability check is included but disabled unless the owner configures `APP_URL`, `MONITORING_ENABLED` and `MONITORING_POLICY_CONFIRMED`. It checks the interface without running searches or clicking a wake-up prompt. It is not a guarantee against hibernation or downtime.
 
 Optional live MeSH calls require outbound access but no repository secret. Do not configure arbitrary upload or cache filesystem paths in the web UI.
 
@@ -131,8 +132,10 @@ Optional live MeSH calls require outbound access but no repository secret. Do no
 
 Uploads are accepted as bytes, signature-checked, size-limited, processed in a controlled temporary directory, and not intentionally retained. The app has no database and does not log complete strategies. Uploaded filenames are never interpreted as server paths, and uploaded content is never executed.
 
+Enter search strategies only, not personal, patient or confidential information. Hosting providers have their own privacy and content terms, which must be reviewed before deployment. Disabling Streamlit usage statistics does not disable provider-level logging.
+
 ## Citation, licence, and version
 
-See [`CITATION.cff`](CITATION.cff). Project code is Apache-2.0; MeSH terminology remains subject to NLM terms and is not relicensed by this project. See [`NOTICE`](NOTICE).
+See [CITATION.cff](CITATION.cff). The proposed release uses PolyForm Noncommercial 1.0.0; MeSH terminology and third-party materials remain subject to their own terms and are not relicensed by this project. See [NOTICE](NOTICE) and [licensing notes](docs/licensing.md). No previously granted Apache-2.0 rights are revoked by this change.
 
-Software version: **0.1.2**. Conversion ruleset: **v21**. The v21 label identifies the conversion semantics, not the product name.
+Software version: **0.1.2**. Conversion ruleset: **v21**. The v21 label identifies the conversion semantics, not the product name. Confirm the paper author list, archive the exact tested release and add its real date and DOI before publication.
