@@ -11,7 +11,6 @@ from web.branding import (
     STRATHCLYDE_LOGO_PATH,
 )
 
-
 ROOT = Path(__file__).parents[2]
 
 

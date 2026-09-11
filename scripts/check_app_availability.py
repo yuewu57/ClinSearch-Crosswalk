@@ -64,8 +64,13 @@ def main() -> int:
         return 2
 
     try:
+        from playwright.sync_api import Error as PlaywrightError
         from playwright.sync_api import sync_playwright
+    except ImportError:
+        print("Install requirements-monitor.txt before running the checker.", file=sys.stderr)
+        return 2
 
+    try:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
             try:
@@ -73,7 +78,7 @@ def main() -> int:
                 check_page(page, url, args.timeout * 1000)
             finally:
                 browser.close()
-    except Exception as exc:
+    except (PlaywrightError, OSError, RuntimeError) as exc:
         # Avoid writing complete page contents, URLs, or uploaded user data to logs.
         print(f"Availability check failed ({type(exc).__name__}). "
               "Open the app manually and inspect its status.", file=sys.stderr)
