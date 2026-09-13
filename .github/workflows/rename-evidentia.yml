@@ -1,0 +1,83 @@
+name: Rename Evidentia references
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Replace obsolete naming
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          replacements = [
+              ("https://github.com/yuewu57/Evidentia-CSC", "https://github.com/yuewu57/ClinSearch-Crosswalk"),
+              ("EVIDENTIA_SITE_CONFIG", "CLINSEARCH_CROSSWALK_SITE_CONFIG"),
+              ("Evidentia_CSC", "ClinSearch_CrossWalk"),
+              ("Evidentia-CSC", "ClinSearch-CrossWalk"),
+              ("Evidentia-convertor", "ClinSearch-CrossWalk"),
+              ("Evidentia", "ClinSearch-CrossWalk"),
+              ("evidentia_csc", "clinsearch_crosswalk"),
+              ("evidentia-csc", "clinsearch-crosswalk"),
+              ("evidentia", "clinsearch-crosswalk"),
+          ]
+
+          tracked = subprocess.check_output(["git", "ls-files", "-z"]).split(b"\0")
+          changed = []
+          for raw in tracked:
+              if not raw:
+                  continue
+              path = Path(raw.decode("utf-8"))
+              if path.as_posix() == ".github/workflows/rename-evidentia.yml":
+                  continue
+              data = path.read_bytes()
+              if b"\0" in data:
+                  continue
+              try:
+                  text = data.decode("utf-8")
+              except UnicodeDecodeError:
+                  continue
+              new = text
+              for old, replacement in replacements:
+                  new = new.replace(old, replacement)
+              if new != text:
+                  path.write_text(new, encoding="utf-8")
+                  changed.append(path.as_posix())
+          print("Changed files:")
+          for path in changed:
+              print(path)
+          PY
+
+          rm -f .github/workflows/rename-evidentia.yml
+          if git grep -n -I -i 'evidentia' -- .; then
+            echo 'Obsolete Evidentia references remain.' >&2
+            exit 1
+          fi
+      - name: Run tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -r requirements-dev.txt
+          pytest
+          ruff check .
+      - name: Commit cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Replace Evidentia naming with ClinSearch-CrossWalk"
+          git push origin HEAD:main
