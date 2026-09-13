@@ -1,6 +1,19 @@
-# ClinSearch-Crosswalk: A Clinical Search Convertor
+# ClinSearch-Crosswalk: a recall-oriented, auditable clinical search translation framework for Ovid MEDLINE-to-PubMed conversion
 
 **Ovid MEDLINE → PubMed**
+
+## Manuscript authors and affiliations
+
+**Authors:** Danqi Zhuang<sup>1</sup>, Fang Qi<sup>2</sup>, Xiaoyue Xi<sup>3</sup>, Chris Robertson<sup>1,4</sup>, Martin Halvey<sup>5</sup>, Yue Wu<sup>1,6</sup>
+
+<sup>1</sup> Department of Mathematics and Statistics, University of Strathclyde, Glasgow, UK  
+<sup>2</sup> Independent Researcher, Tianjin, China  
+<sup>3</sup> Department of Medical Statistics, London School of Hygiene & Tropical Medicine, London, UK  
+<sup>4</sup> Public Health Scotland, Glasgow, UK  
+<sup>5</sup> Department of Computer and Information Sciences, University of Strathclyde, Glasgow, UK  
+<sup>6</sup> Corresponding author: yue.wu@strath.ac.uk
+
+The author list above refers to the associated manuscript. Software contribution, copyright and IP ownership are separate matters and should not be inferred solely from manuscript authorship.
 
 A deterministic, rule-based, recall-oriented converter implementing the approved v21 rules. It translates Ovid MEDLINE syntax into PubMed syntax with line-by-line audit and local validation. It is independent of generative AI and is not affiliated with or endorsed by Cochrane, Ovid, or the U.S. National Library of Medicine (NLM).
 
@@ -136,4 +149,4 @@ Enter search strategies only, not personal, patient or confidential information.
 
 See [CITATION.cff](CITATION.cff). The proposed release uses PolyForm Noncommercial 1.0.0; MeSH terminology and third-party materials remain subject to their own terms and are not relicensed by this project. See [NOTICE](NOTICE) and [licensing notes](docs/licensing.md). No previously granted Apache-2.0 rights are revoked by this change.
 
-Software version: **0.1.2**. Conversion ruleset: **v21**. The v21 label identifies the conversion semantics, not the product name. Confirm the paper author list, archive the exact tested release and add its real date and DOI before publication.
+Software version: **0.1.2**. Conversion ruleset: **v21**. The v21 label identifies the conversion semantics, not the product name. Before publication, archive the exact tested release and add its real date and DOI.
