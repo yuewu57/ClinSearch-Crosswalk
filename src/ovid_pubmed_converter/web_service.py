@@ -54,13 +54,13 @@ def user_facing_warning(warning: str) -> str:
     if warning == "plain_text_file_uploaded_with_rtf_extension":
         return (
             "The uploaded .rtf file was actually plain text rather than Rich Text Format. "
-            "Evidentia decoded the text safely and processed its explicit Medline: strategy. "
+            "ClinSearch-CrossWalk decoded the text safely and processed its explicit Medline: strategy. "
             "Verify the converted result before retrieval."
         )
     if warning == "rtf_line_numbers_recovered_from_medline_paragraph_order":
         return (
             "The uploaded RTF had a Medline section but no visible strategy line numbers. "
-            "Evidentia assigned line numbers by paragraph order because every paragraph "
+            "ClinSearch-CrossWalk assigned line numbers by paragraph order because every paragraph "
             "looked like a complete Ovid row. Verify the reconstructed numbering and final "
             "query before retrieval."
         )

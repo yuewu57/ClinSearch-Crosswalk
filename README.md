@@ -53,14 +53,14 @@ A minimal example RTF is downloadable in the upload tab. It contains only the `M
 
 For a validated conversion, the web page shows two complementary PubMed representations:
 
-1. **One-line PubMed query** — the primary copy-ready query. Starting from the selected final PubMed row, Evidentia recursively substitutes every referenced `#N` row and parenthesizes each substitution to preserve Boolean precedence. Only the final row's dependency closure is expanded; unused rows are not appended to the executable query.
+1. **One-line PubMed query** — the primary copy-ready query. Starting from the selected final PubMed row, ClinSearch-CrossWalk recursively substitutes every referenced `#N` row and parenthesizes each substitution to preserve Boolean precedence. Only the final row's dependency closure is expanded; unused rows are not appended to the executable query.
 2. **Numbered PubMed strategy** — retained for audit, comparison, and troubleshooting. It may contain local `#N` references because it represents the conversion row by row.
 
 The one-line query is produced only for a conversion with `ok` validation status and is locally validated again with line references disallowed. The online converter does not ask for external end-date metadata and does not add a publication-date restriction when it removes an Ovid database-update date row.
 
 ## Installation and running locally
 
-The proposed public publication repository is `yuewu57/Evidentia-CSC`; it must be created from the approved snapshot before its URLs are advertised. During release preparation, use the existing private development repository.
+The proposed public publication repository is `yuewu57/ClinSearch-CrossWalk`; it must be created from the approved snapshot before its URLs are advertised. During release preparation, use the existing private development repository.
 
 ### Linux/macOS
 

@@ -12,7 +12,7 @@ from ovid_pubmed_converter.rtf import parse_rtf_bytes
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Evidentia-CSC: a Clinical Search Convertor: Ovid MEDLINE to PubMed"
+        description="ClinSearch-CrossWalk: a Clinical Search Convertor: Ovid MEDLINE to PubMed"
     )
     parser.add_argument("input", type=Path, help="Ovid strategy .txt or .rtf")
     parser.add_argument("--end-date")

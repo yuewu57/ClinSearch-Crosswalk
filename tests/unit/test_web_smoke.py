@@ -52,7 +52,7 @@ def test_streamlit_application_imports_without_errors():
     app.run(timeout=10)
     assert not app.exception
     assert [tab.label for tab in app.tabs] == ["Paste strategy", "Upload RTF"]
-    assert app.title[0].value == "Evidentia-CSC: a Clinical Search Convertor"
+    assert app.title[0].value == "ClinSearch-CrossWalk: a Clinical Search Convertor"
     assert not app.text_input
 
     app.text_area[0].set_value("1 (202401* or 2025*).ed,dt.").run()

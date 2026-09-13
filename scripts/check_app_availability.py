@@ -9,7 +9,7 @@ import os
 import sys
 from urllib.parse import urlsplit
 
-EXPECTED_TITLE = "Evidentia-CSC: a Clinical Search Convertor"
+EXPECTED_TITLE = "ClinSearch-CrossWalk: a Clinical Search Convertor"
 
 
 def validate_app_url(value: str) -> str:

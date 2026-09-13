@@ -53,7 +53,7 @@ def main() -> None:
     config = {"converterUrl": url, "softwareVersion": versions["__version__"],
               "rulesetVersion": versions["RULESET_VERSION"]}
     (output / "config.js").write_text(
-        "window.EVIDENTIA_SITE_CONFIG = " + json.dumps(config) + ";\n", encoding="utf-8"
+        "window.CLINSEARCH_CROSSWALK_SITE_CONFIG = " + json.dumps(config) + ";\n", encoding="utf-8"
     )
     (output / ".nojekyll").touch()
     print("Static site built; launch link configured." if url else

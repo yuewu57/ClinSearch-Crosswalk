@@ -9,8 +9,8 @@ from scripts.check_app_availability import EXPECTED_TITLE, check_page, validate_
 
 @pytest.mark.parametrize("validator", [checked_url, validate_app_url])
 def test_accepts_public_app_url(validator):
-    assert validator(" https://evidentia-csc.streamlit.app ") == (
-        "https://evidentia-csc.streamlit.app/"
+    assert validator(" https://clinsearch-crosswalk.streamlit.app ") == (
+        "https://clinsearch-crosswalk.streamlit.app/"
     )
 
 

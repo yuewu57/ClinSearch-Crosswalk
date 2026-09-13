@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ovid-pubmed-converter"
 version = "0.1.2"
-description = "Evidentia Ovid MEDLINE to PubMed search strategy convertor"
+description = "ClinSearch-CrossWalk Ovid MEDLINE to PubMed search strategy convertor"
 requires-python = ">=3.12"
 license = {file = "LICENSE"}
 

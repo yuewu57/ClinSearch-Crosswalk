@@ -1,10 +1,10 @@
 cff-version: 1.2.0
-title: "Evidentia-CSC: a Clinical Search Convertor: Ovid MEDLINE to PubMed"
+title: "ClinSearch-CrossWalk: a Clinical Search Convertor: Ovid MEDLINE to PubMed"
 message: "Please cite the software version used; add the associated paper once available."
 type: software
 version: 0.1.2
 license: PolyForm-Noncommercial-1.0.0
 authors:
-  - name: "Evidentia-convertor contributors"
-repository-code: "https://github.com/yuewu57/Evidentia-CSC"
+  - name: "ClinSearch-CrossWalk contributors"
+repository-code: "https://github.com/yuewu57/ClinSearch-Crosswalk"
 # Before publication, confirm the author list and add the actual release date and DOI.

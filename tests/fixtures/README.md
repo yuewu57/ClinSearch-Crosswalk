@@ -1,7 +1,7 @@
 # Selected v20 conversion fixtures — v2
 
 These are starter **conformance and regression fixtures** for the public
-These fixtures validate **Evidentia-CSC: a Clinical Search Convertor** — **Ovid MEDLINE → PubMed**.
+These fixtures validate **ClinSearch-CrossWalk: a Clinical Search Convertor** — **Ovid MEDLINE → PubMed**.
 
 ## Authority
 

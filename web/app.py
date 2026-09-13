@@ -19,7 +19,7 @@ from web.branding import FUNCTIONAL_SUBTITLE, INSTITUTIONAL_AFFILIATION, PRODUCT
 _CACHE_PATH = production_cache_path()
 _TEMPLATE_PATH = Path(__file__).resolve().parents[1] / "resources" / "rtf_input_template.rtf"
 _LICENSE_PATH = Path(__file__).resolve().parents[1] / "LICENSE"
-_REPOSITORY_URL = "https://github.com/yuewu57/Evidentia-CSC"
+_REPOSITORY_URL = "https://github.com/yuewu57/ClinSearch-Crosswalk"
 
 st.set_page_config(
     page_title=PRODUCT_NAME,
@@ -45,7 +45,7 @@ st.warning(
 )
 with st.expander("Important: how Ovid LIMIT and /freq are handled", expanded=True):
     st.markdown(
-        "- **`limit N to ...`**: Evidentia keeps the underlying search represented by row "
+        "- **`limit N to ...`**: ClinSearch-CrossWalk keeps the underlying search represented by row "
         "`N`, omits the LIMIT condition, redirects later references to the base row, and "
         "renumbers surviving rows where required. After running the converted query in "
         "PubMed, apply a relevant PubMed filter **where an equivalent exists** — for example "
@@ -66,7 +66,7 @@ with st.expander("About / Technical details"):
     st.write(f"Conversion ruleset: {RULESET_VERSION}")
     st.write(f"MeSH cache: {_CACHE_PATH.name}")
     st.write("MeSH mode: bundled cache → exact NLM lookup → audited fallback")
-    st.write("Part of Evidentia. Developed by the Evidentia-convertor contributors.")
+    st.write("Part of ClinSearch-CrossWalk. Developed by the ClinSearch-CrossWalk contributors.")
     st.write(f"Institutional affiliation: {INSTITUTIONAL_AFFILIATION}")
     st.markdown(
         f"[Source code]({_REPOSITORY_URL}) · "
@@ -101,7 +101,7 @@ with rtf_tab:
         "Supported:\n"
         "- a standalone **numbered** Ovid strategy; or\n"
         '- an RTF containing an explicit **"Medline:"** section.\n\n'
-        "If a `Medline:` section is present but its line numbers are missing, Evidentia will "
+        "If a `Medline:` section is present but its line numbers are missing, ClinSearch-CrossWalk will "
         "only reconstruct `1, 2, 3, ...` when every extracted paragraph looks like a complete "
         "Ovid search row. The recovery is flagged for review. Ambiguous unnumbered RTFs are "
         "rejected rather than guessed. A standalone RTF without a `Medline:` heading must "
@@ -144,7 +144,7 @@ if result is not None:
     if query:
         st.caption(
             "Use this fully expanded version if you want a single copy-ready PubMed query. "
-            "It contains no Evidentia line references; review any conversion warnings and "
+            "It contains no ClinSearch-CrossWalk line references; review any conversion warnings and "
             "apply relevant PubMed filters before retrieval."
         )
 

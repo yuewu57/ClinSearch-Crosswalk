@@ -1,4 +1,4 @@
-# Static Que² / Evidentia landing page
+# Static Que² / ClinSearch-CrossWalk landing page
 
 This directory contains dependency-free static files suitable for a future GitHub Pages
 site. It is deliberately separate from the Streamlit application and Python conversion

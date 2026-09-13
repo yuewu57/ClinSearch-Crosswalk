@@ -1,4 +1,4 @@
-const config = window.EVIDENTIA_SITE_CONFIG || {};
+const config = window.CLINSEARCH_CROSSWALK_SITE_CONFIG || {};
 const launchLink = document.querySelector("[data-converter-link]");
 const status = document.querySelector("[data-deployment-status]");
 const version = document.querySelector("[data-version]");

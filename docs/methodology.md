@@ -1,6 +1,6 @@
-# Evidentia-CSC: a Clinical Search Convertor methodology
+# ClinSearch-CrossWalk: a Clinical Search Convertor methodology
 
-**Ovid MEDLINE → PubMed** · Part of Evidentia
+**Ovid MEDLINE → PubMed** · Part of ClinSearch-CrossWalk
 
 The dated v20 specification is normative, fixtures are the approved regression oracle, and the preserved Python source is the reference implementation. Refactoring is guarded by exact semantic output comparison plus required and forbidden audit assertions. Approximations, fallback, omission, and manual-review conditions remain visible. Only errors in the final query dependency closure are fatal; unused invalid rows remain warnings.
 
