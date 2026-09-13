@@ -1,8 +1,6 @@
-# Evidentia-CSC: a Clinical Search Convertor
+# A Clinical Search Convertor
 
 **Ovid MEDLINE → PubMed**
-
-Part of Evidentia
 
 A deterministic, rule-based, recall-oriented converter implementing the approved v21 rules. It translates Ovid MEDLINE syntax into PubMed syntax with line-by-line audit and local validation. It is independent of generative AI and is not affiliated with or endorsed by Cochrane, Ovid, or the U.S. National Library of Medicine (NLM).
 
