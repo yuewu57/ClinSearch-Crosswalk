@@ -1,7 +1,20 @@
 """Public, UI-independent conversion result models."""
 
 from dataclasses import dataclass, field
-from enum import StrEnum
+
+try:
+    from enum import StrEnum
+except ImportError:  # Python 3.10 compatibility
+    from enum import Enum
+
+    class StrEnum(str, Enum):
+        """Minimal Python 3.10-compatible backport of enum.StrEnum."""
+
+        def __str__(self) -> str:
+            return str(self.value)
+
+        def __format__(self, spec: str) -> str:
+            return format(self.value, spec)
 
 
 class ValidationStatus(StrEnum):
