@@ -60,7 +60,9 @@ The one-line query is produced only for a conversion with `ok` validation status
 
 ## Installation and running locally
 
-The proposed public publication repository is `yuewu57/ClinSearch-CrossWalk`; it must be created from the approved snapshot before its URLs are advertised. During release preparation, use the existing private development repository.
+Repository: `yuewu57/ClinSearch-CrossWalk`.
+
+**Run the web app from the repository root.** The Streamlit entry point imports the top-level `web` package. Running from inside the `web` directory can cause `ModuleNotFoundError: No module named 'web'`.
 
 ### Linux/macOS
 
@@ -71,7 +73,7 @@ python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-streamlit run web/app.py
+python -m streamlit run web/app.py
 ```
 
 ### Windows PowerShell
@@ -84,7 +86,23 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-streamlit run web/app.py
+python -m streamlit run web/app.py
+```
+
+Before launching, `pwd` should point to the repository root, for example:
+
+```text
+C:\Users\<user>\source\repos\<owner>\ClinSearch-CrossWalk
+```
+
+Do **not** first `cd web` and run `streamlit run app.py`, and do not run `python web/app.py` directly.
+
+If you see `ModuleNotFoundError: No module named 'web'`, return to the repository root and verify the imports before launching:
+
+```powershell
+python -c "import web; print(web.__file__)"
+python -c "from web.branding import PRODUCT_NAME; print(PRODUCT_NAME)"
+python -m streamlit run web/app.py
 ```
 
 The application is normally available at <http://localhost:8501>.
