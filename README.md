@@ -80,6 +80,7 @@ streamlit run web/app.py
 git clone <repository-url>
 cd <repository-directory>
 py -3.12 -m venv .venv
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
