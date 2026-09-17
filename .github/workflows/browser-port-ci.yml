@@ -1,0 +1,50 @@
+name: Browser port quality
+
+on:
+  push:
+    branches: [feature/browser-typescript-v1]
+  pull_request:
+    paths:
+      - 'browser/**'
+      - 'scripts/**'
+      - '.github/workflows/browser-port-ci.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-port-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install reference dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Check reference tests
+        run: python -m pytest -q --junitxml=python-reference-results.xml
+      - name: Check reference lint
+        run: ruff check .
+      - name: Capture tracked source for reproducible local parity development
+        if: always()
+        run: |
+          git archive --format=tar.gz --output=browser-reference-source.tar.gz HEAD
+          git rev-parse HEAD > browser-reference-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-python-reference
+          path: |
+            browser-reference-source.tar.gz
+            browser-reference-commit.txt
+            python-reference-results.xml
+          retention-days: 3
+          if-no-files-found: error
