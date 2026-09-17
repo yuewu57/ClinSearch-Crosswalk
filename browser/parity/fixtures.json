@@ -1,0 +1,125 @@
+[
+  {
+    "id": "freq_1_redundant",
+    "description": "freq=1 is removed as redundant",
+    "source": "1 cancer.ab./freq=1",
+    "expected": {
+      "validationStatus": "ok",
+      "strategyLines": ["#1 cancer[tiab]"],
+      "oneLineQuery": "cancer[tiab]",
+      "rowAuditFlagsContain": ["ovid_frequency_constraint_removed_as_redundant:freq=1"]
+    }
+  },
+  {
+    "id": "freq_2_broadening",
+    "description": "freq>1 retains the expression and audits recall broadening",
+    "source": "1 cancer.ab./freq=2",
+    "expected": {
+      "validationStatus": "ok",
+      "strategyLines": ["#1 cancer[tiab]"],
+      "oneLineQuery": "cancer[tiab]",
+      "rowAuditFlagsContain": ["ovid_frequency_constraint_ignored:freq=2", "major_semantic_approximation_recall_broadened"]
+    }
+  },
+  {
+    "id": "malformed_freq_active",
+    "description": "Malformed active frequency syntax fails safely",
+    "source": "1 cancer.ab./freq=x",
+    "expected": {
+      "validationStatus": "validation_failed",
+      "oneLineQuery": ""
+    }
+  },
+  {
+    "id": "limit_redirect_renumber",
+    "description": "LIMIT aliases are removed, redirected and renumbered",
+    "source": "1 asthma.tw.\n2 wheeze.tw.\n3 1 or 2\n4 limit 3 to humans\n5 cancer.tw.\n6 4 and 5",
+    "expected": {
+      "validationStatus": "ok",
+      "strategyLines": ["#1 asthma[tw]", "#2 wheeze[tw]", "#3 #1 OR #2", "#4 cancer[tw]", "#5 #3 AND #4"],
+      "oneLineQuery": "((asthma[tw]) OR (wheeze[tw])) AND (cancer[tw])",
+      "rowValidationStatuses": {"4": "removed_ignored_ovid_limit"}
+    }
+  },
+  {
+    "id": "final_limit_identity",
+    "description": "A final LIMIT preserves the resolved base as the effective query",
+    "source": "1 asthma.tw.\n2 cancer.tw.\n3 limit 1 to humans",
+    "expected": {
+      "validationStatus": "ok",
+      "strategyLines": ["#1 asthma[tw]", "#2 cancer[tw]", "#3 #1"],
+      "oneLineQuery": "asthma[tw]"
+    }
+  },
+  {
+    "id": "unused_invalid_limit",
+    "description": "An invalid LIMIT outside the final dependency closure is a warning only",
+    "source": "1 asthma.tw.\n2 limit 99 to humans\n3 cancer.tw.",
+    "expected": {
+      "validationStatus": "ok",
+      "oneLineQuery": "cancer[tw]",
+      "rowValidationStatuses": {"2": "warning_unused_line"}
+    }
+  },
+  {
+    "id": "active_invalid_limit",
+    "description": "An invalid LIMIT inside the final dependency closure fails",
+    "source": "1 asthma.tw.\n2 limit 99 to humans\n3 1 or 2",
+    "expected": {
+      "validationStatus": "validation_failed",
+      "oneLineQuery": ""
+    }
+  },
+  {
+    "id": "wildcard_phrase_tiab",
+    "description": "Wildcard multi-word phrase preserves phrase-level field scope",
+    "source": "1 \"breast* cancer*\"[Title/Abstract]",
+    "expected": {
+      "validationStatus": "ok",
+      "strategyLines": ["#1 (breast* cancer*[tiab])"],
+      "rowAuditFlagsContain": ["wildcard_phrase_grouped_pubmed_phrase_tag_preserved:breast* cancer*[tiab]"]
+    }
+  },
+  {
+    "id": "wildcard_phrase_literal_or",
+    "description": "Literal Boolean word inside wildcard phrase remains quoted",
+    "source": "1 \"law or polic*\".tw.",
+    "expected": {
+      "validationStatus": "ok",
+      "strategyLines": ["#1 \"law or polic*\"[tw]"]
+    }
+  },
+  {
+    "id": "inline_multifield_tiab",
+    "description": "Inline .ti,ab. is preserved as one field set",
+    "source": "1 quality of life.ti,ab. or surgical mask.ti,ab.",
+    "expected": {
+      "validationStatus": "ok",
+      "strategyLines": ["#1 (quality[tiab] AND life[tiab]) OR \"surgical mask\"[tiab]"],
+      "rowAuditFlagsContain": ["v21_inline_multifield_suffix_preserved:ti,ab"]
+    }
+  },
+  {
+    "id": "update_date_external_end_date",
+    "description": "Pure update-date row is removed with external end-date metadata",
+    "source": "1 asthma.tw.\n2 (202401* or 2025*).ed,dt.\n3 1 and 2",
+    "endDate": "31-12-2025",
+    "expected": {
+      "validationStatus": "ok",
+      "strategyLines": ["#1 asthma[tw]", "#3 #1"],
+      "oneLineQuery": "asthma[tw]",
+      "rowValidationStatuses": {"2": "removed_ignored_ovid_update_date"},
+      "rowAuditFlagsContain": ["ovid_database_update_date_filter_ignored", "external_end_date_applied_instead_of_ovid_update_date_filter"]
+    }
+  },
+  {
+    "id": "update_date_or_failure",
+    "description": "Dropping an update-date row under OR requires manual review",
+    "source": "1 asthma.tw.\n2 2022*.ed,dt.\n3 1 or 2",
+    "endDate": "31-12-2022",
+    "expected": {
+      "validationStatus": "validation_failed",
+      "oneLineQuery": ""
+    }
+  }
+]
