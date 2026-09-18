@@ -1,0 +1,15 @@
++Among the 12 distinct labels previously discussed, seven now resolve from exact NLM XML term associations: Physical Therapy Techniques, Patient Education, Electrical Stimulation, Bladder, Neurogenic, Cell Phones, Occupational Therapist and Physical Therapist. No case-specific mappings were added. Anal Canal and Neoplasms, Card iac Output, Telepsychiatry, Respiration Artificial and Speech Therapist remain unresolved under this descriptor snapshot.
++
++## Attribution and redistribution
++
++**Courtesy of the U.S. National Library of Medicine.** This frozen 2026 resource is not necessarily the most current or accurate NLM data. NLM does not endorse ClinSearch-CrossWalk. NLM data remain subject to NLM's terms, not the project's software licence:
++
++https://www.nlm.nih.gov/databases/download/terms_and_conditions.html
++
++Data documentation:
++
++- https://www.nlm.nih.gov/databases/download/mesh.html
++- https://www.nlm.nih.gov/mesh/xml_data_elements.html
++- https://www.nlm.nih.gov/mesh/pa_abt.html
++
++Raw source files should be retained with the research archive. GitHub Actions artifacts are temporary, not a substitute for an immutable archival release.
