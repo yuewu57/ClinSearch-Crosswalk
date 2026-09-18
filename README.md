@@ -4,7 +4,7 @@
 
 ClinSearch-CrossWalk implements the approved **v21** conversion semantics. The reference converter is Python. The release-candidate browser application runs that same Python reference engine locally in the browser through Pyodide/WebAssembly behind a TypeScript interface; it is **not** a separate TypeScript reimplementation and does not require a conversion server.
 
-> **Release-candidate status.** The public browser interface is not yet declared a final research release. Release is gated on a populated, provenance-checked MeSH cache, representative real-corpus acceptance checks, passing CI on the frozen commit, licensing/release approval, and archival metadata. See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
+> **Release-candidate status.** A populated 2026 MeSH cache is now bundled for release-candidate testing. The public browser interface is not yet declared a final research release; remaining gates include representative real-corpus acceptance checks, passing CI on the frozen commit, licensing/release approval, deployment verification and archival metadata. See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 
 ## Associated manuscript
 
@@ -87,10 +87,10 @@ A one-line executable query is not exposed as validated output when the conversi
 
 Resolution is deliberately exact only: preferred labels, exact entry terms and reviewed historical aliases. Successful mappings record canonical label, descriptor ID/URI, descriptor class, match type, MeSH year and pharmacological-action status.
 
-The repository's `resources/mesh_resolution_cache_v20_v1.json` is an **empty development starter cache**, not the final terminology bundle. A public research release must use a populated dated cache that passes:
+The repository retains `resources/mesh_resolution_cache_v20_v1.json` as an empty development starter and now also contains the populated release-candidate cache `resources/mesh_resolution_cache_v20_v1_YW_18092026.json` (MeSH 2026; 620 exact resolved records). The browser build selects the newest dated reviewed cache by default. Release caches must pass:
 
 ```bash
-python scripts/validate_mesh_cache_release.py path/to/cache.json
+python scripts/validate_mesh_cache_release.py resources/mesh_resolution_cache_v20_v1_YW_18092026.json
 ```
 
 See [MeSH cache provenance](docs/mesh_cache_provenance_v1_YW_18092026.md). Synthetic fixture terminology must never be promoted to production resources.
