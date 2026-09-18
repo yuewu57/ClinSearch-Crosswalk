@@ -91,6 +91,19 @@ test('dark mode retains the invalid-query gate and stores only theme preference'
   await expect(page.locator('#copy')).toBeDisabled();
 });
 
+test('associated paper block is present without a premature external link', async ({page}) => {
+  await page.goto('/');
+  await expect(page.locator('.paper-label')).toHaveText('ASSOCIATED PAPER');
+  await expect(page.locator('#associated-paper-title')).toHaveText(
+    'ClinSearch-Crosswalk: a recall-oriented, auditable clinical search translation framework for Ovid MEDLINE-to-PubMed conversion',
+  );
+  await expect(page.locator('.paper-authors')).toHaveText(
+    'Danqi Zhuang · Fang Qi · Xiaoyue Xi · Chris Robertson · Martin Halvey · Yue Wu',
+  );
+  await expect(page.locator('.paper-link-status')).toHaveText('Paper link forthcoming.');
+  await expect(page.locator('.paper-citation a')).toHaveCount(0);
+});
+
 test('theme selector remains usable without overflow on narrow mobile layouts', async ({page}) => {
   await page.goto('/');
   await runExample(page, 'limit');
