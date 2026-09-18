@@ -34,7 +34,7 @@ def validate_snapshot(data: dict[str, Any]) -> dict[str, int]:
         raise ValueError("browser_snapshot_kind_or_year_invalid")
     for field in ("descriptors", "preferred", "terms", "project_aliases"):
         if not isinstance(data.get(field), dict):
-            raise ValueError(f"browser_snapshot_{field}_invalid")
+            raise TypeError(f"browser_snapshot_{field}_invalid")
     descriptors = data["descriptors"]
     if not descriptors:
         raise ValueError("browser_snapshot_empty")
@@ -47,7 +47,7 @@ def validate_snapshot(data: dict[str, Any]) -> dict[str, int]:
         if not isinstance(label, str) or not label.strip() or cls not in CLASSES:
             raise ValueError("browser_snapshot_descriptor_metadata_invalid")
         if not isinstance(pa, bool):
-            raise ValueError("browser_snapshot_pa_metadata_invalid")
+            raise TypeError("browser_snapshot_pa_metadata_invalid")
         if ui not in data["preferred"].get(_mesh_cache_key(label), []):
             raise ValueError("browser_snapshot_missing_preferred_label")
     for field in ("preferred", "terms"):
@@ -150,7 +150,7 @@ class SnapshotResolver(MeshResolver):
 def resolver_from_payload(cache: dict[str, Any]) -> MeshResolver:
     """Browser bridge entry; schema-1 evaluation-cache behaviour is preserved."""
     if not isinstance(cache, dict):
-        raise ValueError("browser_cache_schema_invalid")
+        raise TypeError("browser_cache_schema_invalid")
     if cache.get("schema_version") == SCHEMA:
         return SnapshotResolver(cache, validate=False)
     if cache.get("schema_version") != 1:
