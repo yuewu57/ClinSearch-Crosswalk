@@ -1,30 +1,25 @@
-# Browser port plan
+# Browser implementation plan
 
-This branch ports the validated ClinSearch-Crosswalk conversion behaviour to a browser-side TypeScript implementation without changing the Python reference implementation on `main`.
+## 18 September refinement — review before merge
 
-## Phase 0 — freeze the Python reference behaviour
+The functional preview now uses a TypeScript interface/worker with the unchanged Python engine in Pyodide/WebAssembly. The initial independent TypeScript rewrite is deferred. This reaches the browser-only static-hosting goal with one maintained engine; it has a larger initial runtime download. See `browser_runtime_decision_v1_YW_18092026.md` for trade-offs and approval boundaries.
 
-- identify the current authoritative Python entry points and v21 conversion layer;
-- inventory regression fixtures and tests;
-- define parity fixtures as input, expected translated rows, warnings/audit flags, validation status, and final executable query;
-- record the source commit used as the browser-port baseline.
+## Phase 0 — freeze the reference
 
-## Phase 1 — TypeScript conversion core
+Baseline `main` commit: `8ca2ca49984d13e466ae12332964f3131e49ee64`. Verify Python tests, module hashes, fixture outputs, audit statuses and final query. No conversion semantics are changed by browser work.
 
-Port deterministic conversion logic in rule-priority order. Keep parsing, semantic conversion, validation, and rendering separate.
+## Phase 1 — local runtime
 
-## Phase 2 — Python ↔ TypeScript parity
+Copy unchanged modules into a self-hosted, version-pinned WebAssembly runtime; isolate requests in a worker; allow cache-only terminology; add explicit input/time/expansion limits.
 
-Run identical frozen fixtures against both implementations. Treat differences in translated rows, status, dependency structure, or material audit flags as failures unless explicitly approved.
+## Phase 2 — parity
 
-## Phase 3 — browser UI
+Compare native Python public API outputs against browser-runtime outputs with identical inputs and cache records. Include rows, all status/audit fields, final query and rendered exports. Repeat conversions. Synthetic fixture metadata must never be bundled for production.
 
-Provide paste and RTF input, converted PubMed strategy, audit, validation status, and copy-ready final query. Non-OK results must remain visibly gated.
+## Phase 3 — interface
 
-## Phase 4 — static deployment
+Paste and RTF; query, numbered strategy, audit, provenance and failure gate. Clear stale output on changes, failures and cancellation. Test built security headers, network isolation, downloads and mobile layout.
 
-Build a browser-only production bundle suitable for Cloudflare Pages. Use a bundled frozen MeSH cache first; unresolved headings follow the approved safe fallback policy. Optional live terminology enrichment, if added later, must not alter the deterministic core.
+## Phase 4 — release approval
 
-## Baseline
-
-Browser-port baseline commit on `main`: `8ca2ca49984d13e466ae12332964f3131e49ee64`.
+Bundle the frozen production cache; complete real-corpus acceptance checks and owner review; then prepare static hosting. Do not merge or publish automatically. Main, existing Streamlit, licence and repository visibility are unchanged.
