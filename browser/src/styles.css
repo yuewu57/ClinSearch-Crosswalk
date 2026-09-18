@@ -247,6 +247,11 @@ td { padding: 12px 10px; border-top: 1px solid var(--subtle-border); vertical-al
 .about-grid p { font-size: 11px; color: var(--muted); line-height: 1.8; margin: 0; }
 .provenance { border-top: 1px solid var(--border); padding: 6px 0 15px; }
 .provenance pre { max-height: 240px; overflow: auto; background: var(--surface); border: 1px solid var(--border); padding: 15px; }
+.paper-citation { border-top: 1px solid var(--border); margin: 24px 0 4px; padding: 24px 0 12px; }
+.paper-label { display: block; margin-bottom: 8px; color: var(--accent); font-size: 9px; font-weight: 750; letter-spacing: 1.7px; }
+.paper-citation h2 { max-width: 980px; font-size: 16px; line-height: 1.45; letter-spacing: -0.25px; }
+.paper-authors { margin: 9px 0 3px; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.paper-link-status { margin: 3px 0 0; color: var(--muted); font-size: 10px; }
 footer { max-width: 1320px; margin: auto; padding: 18px 38px 28px; display: flex; justify-content: space-between; gap: 20px; color: var(--muted); font-size: 10px; }
 footer nav { display: flex; gap: 18px; }
 footer a { text-decoration: none; }
