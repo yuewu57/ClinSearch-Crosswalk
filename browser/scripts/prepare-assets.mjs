@@ -127,6 +127,7 @@ const manifest = {
     ? 'mesh2026_exact_snapshot_v1_YW_18092026.json'
     : path.basename(selected),
   evaluationCacheSha256: sha(evaluationCache),
+  evaluationCacheCanonicalSha256: '34467e3deb46ec6a6709ad0123bf86f7d637aaec091e2a149437c03770b71caf',
   meshYear: cache.mesh_year ?? null,
   cacheSource: cache.source ?? null,
   mode: 'cache-only',
