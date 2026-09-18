@@ -4,7 +4,7 @@
 
 ClinSearch-CrossWalk implements the approved **v21** conversion semantics. The reference converter is Python. The release-candidate browser application runs that same Python reference engine locally in the browser through Pyodide/WebAssembly behind a TypeScript interface; it is **not** a separate TypeScript reimplementation and does not require a conversion server.
 
-> **Release-candidate status.** A populated 2026 MeSH cache is now bundled for release-candidate testing. The public browser interface is not yet declared a final research release; remaining gates include representative real-corpus acceptance checks, passing CI on the frozen commit, licensing/release approval, deployment verification and archival metadata. See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
+> **Release-candidate status.** The public GitHub Pages browser is deployed with a frozen MeSH 2026 exact-resolution snapshot (31,110 supported descriptors; 267,012 exact preferred/entry-term label keys). The 620-record terminology cache used for framework development/external benchmarking remains separate and unchanged as evaluation provenance. The browser is not yet declared a final research release; remaining gates include representative real-corpus acceptance, final release/licensing approval and archival metadata. See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 
 ## Associated manuscript
 
@@ -87,13 +87,19 @@ A one-line executable query is not exposed as validated output when the conversi
 
 Resolution is deliberately exact only: preferred labels, exact entry terms and reviewed historical aliases. Successful mappings record canonical label, descriptor ID/URI, descriptor class, match type, MeSH year and pharmacological-action status.
 
-The repository retains `resources/mesh_resolution_cache_v20_v1.json` as an empty development starter and now also contains the populated release-candidate cache `resources/mesh_resolution_cache_v20_v1_YW_18092026.json` (MeSH 2026; 620 exact resolved records). The browser build selects the newest dated reviewed cache by default. Release caches must pass:
+The repository retains `resources/mesh_resolution_cache_v20_v1.json` as an empty development starter and `resources/mesh_resolution_cache_v20_v1_YW_18092026.json` as the immutable 620-record evaluation-provenance cache. Ordinary local builds continue to default to this reviewed evaluation cache unless `MESH_CACHE_PATH` is supplied. The public GitHub Pages workflow instead reconstructs a frozen MeSH 2026 exact-resolution snapshot from hash-pinned official NLM Descriptor and Supplementary Concept XML sources, verifies the reviewed snapshot SHA-256, and packages that snapshot for the browser. The public snapshot covers 31,110 supported descriptors and 267,012 exact preferred/entry-term label keys; resolution remains exact-only with no fuzzy or nearest-term mapping.
 
 ```bash
 python scripts/validate_mesh_cache_release.py resources/mesh_resolution_cache_v20_v1_YW_18092026.json
 ```
 
-See [MeSH cache provenance](docs/mesh_cache_provenance_v1_YW_18092026.md). Synthetic fixture terminology must never be promoted to production resources.
+The frozen browser snapshot SHA-256 is `7ebdeba5e6c6d09b154e053e57777d746b51939a50bad8deac5b14bd07c7a6da`; its build provenance is recorded in `resources/mesh2026_frozen_browser_manifest_v1_YW_18092026.json`. The evaluation cache has formatting-independent canonical-JSON SHA-256 `34467e3deb46ec6a6709ad0123bf86f7d637aaec091e2a149437c03770b71caf`. See [MeSH cache provenance](docs/mesh_cache_provenance_v1_YW_18092026.md). Synthetic fixture terminology must never be promoted to production resources.
+
+## Public browser
+
+The deployed release-candidate application is available at:
+
+https://yuewu57.github.io/ClinSearch-Crosswalk/
 
 ## Browser release candidate
 
