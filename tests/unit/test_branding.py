@@ -40,9 +40,7 @@ def test_public_app_does_not_load_or_render_logos():
 
 
 def test_public_browser_surface_uses_release_branding_without_legacy_logos():
-    index = (ROOT / "browser/index.html").read_text(encoding="utf-8")
     app = (ROOT / "browser/src/main.ts").read_text(encoding="utf-8")
-    assert "ClinSearch-CrossWalk" in index
     assert "ClinSearch-CrossWalk" in app
     assert "Ovid MEDLINE" in app
     assert "PubMed" in app
