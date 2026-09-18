@@ -36,9 +36,9 @@ This checklist separates work that is already implemented from evidence still re
 - [x] Static browser architecture; no conversion backend.
 - [x] System/Light/Dark themes and mobile layout checks.
 - [x] Associated-paper block with placeholder rather than invented URL.
-- [x] Security headers/CSP in static build.
-- [ ] Select production static host.
-- [ ] Deploy preview HTTPS URL.
+- [x] Browser CSP embedded in the static entry document; optional response-header file retained for hosts that support it.
+- [x] Select production static host: GitHub Pages.
+- [ ] Enable Pages with GitHub Actions after branch review/merge, then deploy the HTTPS site.
 - [ ] Verify MIME types, headers and runtime loading on the real URL.
 - [ ] Verify desktop and mobile acceptance cases.
 - [ ] Remove development/noindex notices only after release approval.
