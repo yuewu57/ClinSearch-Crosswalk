@@ -25,6 +25,7 @@ export interface RuntimeManifest {
   cacheSha256: string; cacheRecords: number; cacheLabelKeys: number;
   cacheKind: 'evaluation-cache' | 'full-descriptor-snapshot';
   cacheFile: string; evaluationCacheSha256: string;
+  evaluationCacheCanonicalSha256: string;
   meshYear: number | null; cacheSource: string | null; mode: 'cache-only';
   buildStatus: string;
   limits: {inputBytes: number; rows: number; nesting: number; conversionTimeoutSeconds: number};
