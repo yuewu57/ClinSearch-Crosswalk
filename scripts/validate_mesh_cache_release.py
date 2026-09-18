@@ -17,7 +17,7 @@ ALLOWED_RECORD_CLASSES = {
     "GeographicalDescriptor",
 }
 ALLOWED_MATCH_TYPES = {"preferred", "entry", "historical"}
-DESCRIPTOR_ID_RE = re.compile(r"^D\d{6}$")
+DESCRIPTOR_ID_RE = re.compile(r"^D(?:\d{6}|\d{9})$")
 NLM_MESH_PREFIX = "http://id.nlm.nih.gov/mesh/"
 
 
