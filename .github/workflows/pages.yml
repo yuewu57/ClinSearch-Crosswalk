@@ -1,0 +1,91 @@
+name: Publish GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'browser/**'
+      - 'src/**'
+      - 'resources/**'
+      - 'scripts/export_browser_parity.py'
+      - 'scripts/validate_mesh_cache_release.py'
+      - 'tests/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: browser/package-lock.json
+
+      - name: Install Python test dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Validate frozen MeSH release cache
+        run: python scripts/validate_mesh_cache_release.py resources/mesh_resolution_cache_v20_v1_YW_18092026.json
+
+      - name: Run Python regression and conformance tests
+        run: python -m pytest -q
+
+      - name: Check Python formatting and lint
+        run: ruff check .
+
+      - name: Verify native reference parity manifest
+        run: python scripts/export_browser_parity.py --check
+
+      - name: Install browser dependencies
+        run: npm ci --ignore-scripts
+        working-directory: browser
+
+      - name: Audit browser dependencies
+        run: npm audit --audit-level=high
+        working-directory: browser
+
+      - name: Run browser parity tests
+        run: npm test
+        working-directory: browser
+
+      - name: Build static browser application
+        run: npm run build
+        working-directory: browser
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: browser/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
