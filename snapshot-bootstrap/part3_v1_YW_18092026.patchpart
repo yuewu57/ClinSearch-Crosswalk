@@ -1,0 +1,224 @@
+-if (cache.schema_version !== 1 || !cache.records || typeof cache.records !== 'object' || Array.isArray(cache.records)) throw new Error('Invalid production cache');
+-for (const record of Object.values(cache.records)) {
+-  if (JSON.stringify(record).match(/FIXTURE_|fixture:\/\//i)) throw new Error('Synthetic fixture metadata must not enter production');
+-  if (record.status !== 'resolved' || !record.canonical_label || !record.record_class || !/^D\d+$/.test(record.descriptor_id ?? '')) throw new Error('Production record missing verified MeSH provenance');
++const corpus = path.join(resources, 'mesh_resolution_cache_v20_v1_YW_18092026.json');
++const corpusText = await readFile(corpus, 'utf8');
++if (sha(corpusText) !== 'a975dee7b863d6bd74199ded85ffe9f36cb44963e3f897fe5c9c8a3e923e91f1') throw new Error('Preserved 620-record cache changed');
++const profile = process.env.MESH_TERMINOLOGY_PROFILE || (process.env.MESH_CACHE_PATH ? 'corpus-620' : 'mesh2026-complete');
++if (!['corpus-620', 'mesh2026-complete'].includes(profile)) throw new Error('Unknown terminology profile');
++const complete = profile === 'mesh2026-complete';
++const snapshotDir = path.join(resources, 'mesh2026');
++const selected = complete ? path.join(snapshotDir, 'mesh2026_descriptor_exact_v1_YW_18092026.json')
++  : process.env.MESH_CACHE_PATH ? path.resolve(repo, process.env.MESH_CACHE_PATH) : corpus;
++const cacheText = await readFile(selected, 'utf8');
++const cache = JSON.parse(cacheText);
++let gzipHash;
++if (complete) {
++  const frozen = JSON.parse(await readFile(path.join(snapshotDir, 'mesh2026_snapshot_manifest_v1_YW_18092026.json'), 'utf8'));
++  if (cache.schema_version !== 2 || cache.kind !== 'mesh-descriptor-exact' || cache.mesh_year !== 2026) throw new Error('Invalid descriptor snapshot');
++  if (sha(cacheText) !== frozen.products.descriptor.sha256) throw new Error('Snapshot hash mismatch');
++  if (cache.reference_engine_sha256 !== sourceHashes['src/ovid_pubmed_converter/engine.py']) throw new Error('Snapshot normaliser/reference mismatch');
++  const gzipBytes = await readFile(selected + '.gz');
++  gzipHash = sha(gzipBytes);
++  if (gzipHash !== frozen.products.descriptor.gzip_sha256) throw new Error('Compressed snapshot hash mismatch');
++  await writeFile(path.join(runtime, 'mesh-cache.json.gz'), gzipBytes);
++} else {
++  if (cache.schema_version !== 1 || !cache.records || typeof cache.records !== 'object' || Array.isArray(cache.records)) throw new Error('Invalid production cache');
++  for (const record of Object.values(cache.records)) {
++    if (JSON.stringify(record).match(/FIXTURE_|fixture:\/\//i)) throw new Error('Synthetic fixture metadata must not enter production');
++    if (record.status !== 'resolved' || !record.canonical_label || !record.record_class || !/^D\d+$/.test(record.descriptor_id ?? '')) throw new Error('Production record missing verified MeSH provenance');
++  }
+@@ -49 +68 @@
+-const cacheJson = JSON.stringify(cache);
++const cacheJson = complete ? cacheText : JSON.stringify(cache);
+@@ -57,0 +77 @@
++  snapshotAdapterSha256: sha(sources['mesh_snapshot_v1_YW_18092026.py']),
+@@ -58,0 +79,6 @@
++  terminologyProfile: profile, cacheCompression: complete ? 'gzip' : 'none',
++  cacheFile: complete ? 'mesh-cache.json.gz' : 'mesh-cache.json', cacheGzipSha256: gzipHash,
++  cacheExactLabels: complete ? Object.keys(cache.terms).length : Object.keys(cache.records).length,
++  snapshotId: cache.snapshot_id ?? null, terminologyFrozenAt: cache.frozen_at_utc ?? cache.generated_at_utc ?? null,
++  terminologySourceFiles: cache.source_files ?? [],
++  preservedCorpusCacheSha256: sha(corpusText),
+@@ -66 +92 @@
+-console.log(`Prepared browser runtime: ${Object.keys(sources).length - 1} unchanged Python modules; ${manifest.cacheRecords} production cache records.`);
++console.log(`Prepared browser runtime: ${Object.keys(sourceHashes).length} unchanged Python modules; ${manifest.cacheRecords} production cache records.`);
+--- a/browser/src/main.ts
++++ b/browser/src/main.ts
+@@ -15 +15 @@
+-<div class="example-row"><label for="example">Try an example</label><select id="example"><option value="">Choose a test case…</option><option value="basic">Basic Boolean strategy</option><option value="limit">Final LIMIT row</option><option value="date">Update-date removal</option><option value="invalid">Invalid frequency — blocked</option><option value="mesh">MeSH fallback warning</option></select></div>
++<div class="example-row"><label for="example">Try an example</label><select id="example"><option value="">Choose a test case…</option><option value="basic">Basic Boolean strategy</option><option value="limit">Final LIMIT row</option><option value="date">Update-date removal</option><option value="invalid">Invalid frequency — blocked</option><option value="mesh">MeSH fallback warning</option><option value="fullmesh">MeSH beyond the corpus cache</option></select></div>
+@@ -24 +24 @@
+-<section class="about-grid"><div><h3>Keep the caveats with the query.</h3><p>Proximity, field mappings and omitted restrictions may broaden retrieval. Inspect the audit before using a translation in evidence synthesis.</p></div><div><h3>Local computation, explicit provenance.</h3><p>The static website loads a pinned Python/WebAssembly runtime once. The conversion itself then runs locally, using the bundled terminology cache only.</p></div><div><h3>A research utility, not search design.</h3><p>This tool translates an established strategy. It does not generate clinical concepts, screen studies or verify live PubMed results.</p></div></section>
++<section class="about-grid"><div><h3>Keep the caveats with the query.</h3><p>Proximity, field mappings and omitted restrictions may broaden retrieval. Inspect the audit before using a translation in evidence synthesis.</p></div><div><h3>Local computation, explicit provenance.</h3><p>The static website loads a pinned Python/WebAssembly runtime once. The conversion itself then runs locally, using the bundled terminology only.</p><p>Courtesy of the U.S. National Library of Medicine. Frozen 2026 data, not necessarily the latest available. NLM does not endorse this software.</p></div><div><h3>A research utility, not search design.</h3><p>This tool translates an established strategy. It does not generate clinical concepts, screen studies or verify live PubMed results.</p></div></section>
+@@ -45,0 +46 @@
++  fullmesh: '1 exp Narcolepsy/',
+@@ -150 +151,3 @@
+-    el('preview-notice').textContent = manifest.cacheRecords ? `Development preview · Bundled MeSH ${manifest.meshYear ?? 'terminology'} cache: ${manifest.cacheRecords} verified exact records. Cache misses use audited source-heading fallback. Local checks do not establish PubMed retrieval equivalence.` : 'Development preview · The bundled MeSH cache is empty. Headings use audited source-heading fallback; verified label updates and pharmacological-action expansion are unavailable for uncached terms. Local checks do not establish PubMed retrieval equivalence.';
++    el('preview-notice').textContent = manifest.terminologyProfile === 'mesh2026-complete'
++      ? `Development preview · Frozen MeSH ${manifest.meshYear}: ${manifest.cacheRecords.toLocaleString('en-GB')} descriptors · ${(manifest.cacheExactLabels ?? 0).toLocaleString('en-GB')} exact labels. Unresolved labels use audited fallback. Local checks do not establish PubMed retrieval equivalence.`
++      : `Development preview · Preserved corpus cache: ${manifest.cacheRecords} records. Cache misses use audited source-heading fallback. Local checks do not establish PubMed retrieval equivalence.`;
+--- a/browser/e2e/browser.spec.ts
++++ b/browser/e2e/browser.spec.ts
+@@ -51 +51 @@
+-  await expect(page.locator('#preview-notice')).toContainText('620 verified exact records');
++  await expect(page.locator('#preview-notice')).toContainText('31,110 descriptors');
+@@ -79,0 +80,34 @@
++
++
++test('complete snapshot resolves a heading outside the corpus cache using compressed local assets', async({page})=>{
++  const requests:string[]=[];
++  page.on('request', r=>requests.push(r.url()));
++  await page.goto('/');
++  await convert(page,'1 exp Narcolepsy/');
++  await expect(page.locator('#query')).toHaveValue('"Narcolepsy"[mh]');
++  await expect(page.locator('#warning-list')).not.toContainText('not verified');
++  await expect(page.locator('#audit-body')).toContainText('mesh_resolved:');
++  await expect(page.locator('#preview-notice')).toContainText('267,012 exact labels');
++  expect(requests.some(url=>url.endsWith('/runtime/mesh-cache.json.gz'))).toBeTruthy();
++  expect(requests.some(url=>url.endsWith('/runtime/mesh-cache.json'))).toBeFalsy();
++  expect(requests.every(url=>url.startsWith('http://127.0.0.1:4173/'))).toBeTruthy();
++  const manifest=JSON.parse(await page.locator('#provenance-text').textContent() || '{}');
++  expect(manifest.terminologyProfile).toBe('mesh2026-complete');
++  expect(manifest.cacheSha256).toMatch(/^[0-9a-f]{64}$/);
++});
++
++test('full snapshot applies exact entry labels and does not repair misspellings',async({page})=>{
++  await page.goto('/');await convert(page,'1 Patient Education/');
++  await expect(page.locator('#query')).toHaveValue('"Patient Education as Topic"[mh]');
++  await expect(page.locator('#audit-body')).toContainText('|entry|');
++  await convert(page,'1 Card iac Output/');
++  await expect(page.locator('#query')).toHaveValue('"Card iac Output"[mh]');
++  await expect(page.locator('#warning-list')).toContainText('not verified');
++});
++
++test('full snapshot PA branch requires an explicit source explosion',async({page})=>{
++  await page.goto('/');await convert(page,'1 exp Anti-Bacterial Agents/');
++  await expect(page.locator('#query')).toHaveValue('("Anti-Bacterial Agents"[mh] OR "Anti-Bacterial Agents"[pa])');
++  await convert(page,'1 Anti-Bacterial Agents/');
++  await expect(page.locator('#query')).toHaveValue('"Anti-Bacterial Agents"[mh]');
++});
+--- a/browser/tests/parity.test.mjs
++++ b/browser/tests/parity.test.mjs
+@@ -8,0 +9 @@
++execFileSync(process.env.PYTHON || 'python', ['../scripts/export_mesh_snapshot_acceptance_v1_YW_18092026.py'], {cwd: root});
+@@ -62,0 +64,8 @@
++
++if (manifest.terminologyProfile === 'mesh2026-complete') {
++  const snapshotCases = JSON.parse(read('../parity/snapshot-generated.json'));
++  for (const item of snapshotCases) test(`complete snapshot native/WASM parity: ${item.id}`, () => {
++    assert.deepEqual(runtime.convert(item.request), item.expected);
++    assert.deepEqual(runtime.convert(item.request), item.expected, 'repeat must be deterministic');
++  });
++}
+--- a/browser/.gitignore
++++ b/browser/.gitignore
+@@ -11,0 +12,2 @@
++
++parity/snapshot-generated.json
+--- a/browser/README.md
++++ b/browser/README.md
+@@ -69,0 +70,9 @@
++
++## Complete MeSH 2026 candidate
++
++This branch supports the frozen descriptor/entry-term snapshot described in
++`../docs/mesh2026_snapshot_v1_YW_18092026.md`. The 620-record file remains unchanged.
++Set `MESH_TERMINOLOGY_PROFILE=corpus-620` for that preserved build, or
++`MESH_TERMINOLOGY_PROFILE=mesh2026-complete` for the full descriptor snapshot.
++The latter is the candidate default. SCR/qualifier indexes are separate data
++resources and do not introduce new conversion rules.
+--- a/README.md
++++ b/README.md
+@@ -184,0 +185,8 @@
++
++## Frozen full-vocabulary candidate
++
++The separately versioned MeSH 2026 resources and browser adapter are documented
++in [the snapshot report](docs/mesh2026_snapshot_v1_YW_18092026.md). They preserve
++the 620-record corpus cache unchanged and identify the terminology profile in
++each browser report. New-profile results must not be presented as historical
++benchmark results without a matching evaluation configuration.
+--- /dev/null
++++ b/docs/mesh2026_snapshot_v1_YW_18092026.md
+@@ -0,0 +1,94 @@
++# Frozen MeSH 2026 exact-resolution snapshot
++
++## Status and scope
++
++This is a separately versioned terminology configuration, not a rewrite of the v21 conversion engine. The 620-key corpus cache remains at `resources/mesh_resolution_cache_v20_v1_YW_18092026.json`, with SHA-256 `a975dee7b863d6bd74199ded85ffe9f36cb44963e3f897fe5c9c8a3e923e91f1`. It has not been extended, merged with the new data, or overwritten. Its retention is provenance preservation, not proof that it was the exact configuration of a historical benchmark run.
++
++The new resources contain complete exact-label indexes of the English 2026 Descriptor, Supplementary Concept Record (SCR), and Qualifier XML files downloaded from NLM. They are not a full-text export of scope notes, history notes, or tree descriptions. The **browser converter consumes the descriptor resource only**. SCRs and qualifiers are packaged separately and are not silently reclassified as `[mh]` descriptors or given unapproved conversion rules.
++
++| Resource | Records | Distinct normalised labels within resource |
++|---|---:|---:|
++| Descriptors | 31,110 | 267,012 |
++| Supplementary concepts | 324,046 | 729,017 |
++| Qualifiers | 76 | 303 |
++
++The descriptor resource contains 30,512 topical descriptors, 194 publication types, 2 check tags and 402 geographical descriptors. Every canonical descriptor name and every `ConceptList/Concept/TermList/Term/String` is indexed. No API search-result limit or corpus-selected heading list is used.
++
++## Authoritative inputs and freezing
++
++See `resources/mesh2026_source_lock_v1_YW_18092026.json`. It records the original URLs, retrieval times, HTTP Last-Modified values, sizes and SHA-256 hashes. All three downloaded files reported Last-Modified on 12 August 2026. They were acquired on 18 September 2026. A frozen snapshot is not a claim to reflect the latest daily NLM update.
++
++NLM XML sources:
++
++- https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/desc2026.gz
++- https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/supp2026.gz
++- https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/qual2026.xml
++
++The builder checks all input byte hashes and sizes, English root elements, the 2026 DTD reference, unique record identities, supported record classes, minimum full-file coverage and referential integrity of direct PA targets. It uses streaming XML parsing without downloading or executing the external DTD. A changed source fails the hash lock rather than silently creating a new snapshot under the same identity.
++
++Rebuild from the archived source files, from repository root:
++
++```powershell
++python scripts/build_mesh_2026_snapshot_v1_YW_18092026.py `
++  --source-dir "C:\path\to\archived_NLM_sources" `
++  --source-lock resources/mesh2026_source_lock_v1_YW_18092026.json `
++  --output-dir resources/mesh2026
++```
++
++JSON uses sorted keys, UTF-8 and LF. Gzip uses an empty filename and a zero timestamp. The source lock fixes the acquisition timestamp, so repeated builds do not invent new provenance. The manifest records output hashes, counts, the builder hash and the comparison with the preserved cache.
++
++## Exact matching and ambiguity
++
++The browser adapter delegates typography, whitespace and case normalisation to the unchanged reference engine. It applies the ten existing reviewed historical aliases, then exact preferred-label matching, then exact entry-term matching. Multiple occurrences of a term within one descriptor do not manufacture ambiguity; distinct candidate descriptor IDs remain distinct. No fuzzy search, punctuation guessing, token reordering, history-note inference, nearest-term mapping, or ad-hoc external-benchmark alias has been added.
++
++Ambiguity remains explicitly supported and tested, although the supplied English 2026 descriptor index contains no ambiguous normalised preferred or entry keys. Missing or ambiguous labels use the existing audited source-heading fallback. Completeness of the current vocabulary does not imply that misspellings or every historical Ovid expression can be resolved.
++
++## Pharmacological-action direction
++
++The PA flag means **this descriptor is the target of a direct pharmacological-action relation from a substance**, not that the descriptor is a chemical with its own actions. Direct edges are collected from both Descriptor and SCR XML. The result contains 567 PA targets, including 105 targets seen only in SCR records. The separate `pa2026.xml` expansion file is deliberately not used because it also includes selected ancestors, unlike the reference resolver's direct-edge query with inference disabled.
++
++The conversion engine still adds `[pa]` only for an explicitly exploded applicable heading. Ordinary headings do not acquire an extra `[pa]` branch merely because metadata are available.
++
++## Browser packaging
++
++The descriptor JSON is 12,722,891 bytes, or 2,532,483 bytes in its frozen gzip form. The browser normally requests the gzip asset from the same static host and decompresses it locally. Both compressed and decompressed hashes are checked. An uncompressed same-origin asset is retained for environments without `DecompressionStream`. No external terminology service or new backend is introduced.
++
++The runtime manifest identifies the selected terminology profile, snapshot ID, frozen timestamp, source files, data hashes, descriptor count, exact-label count and unchanged Python reference hashes. The UI distinguishes a complete descriptor snapshot from the 620-key corpus cache. Only public terminology is memoised; user strategies and results are not retained in that cache.
++
++From repository root, select the preserved profile explicitly for a build:
++
++```powershell
++$env:MESH_TERMINOLOGY_PROFILE = "corpus-620"
++cd browser
++npm run build
++```
++
++Select the candidate full descriptor profile:
++
++```powershell
++$env:MESH_TERMINOLOGY_PROFILE = "mesh2026-complete"
++cd browser
++npm run build
++```
++
++In this candidate branch the default profile is `mesh2026-complete`. Nothing changes on the live Pages site until a reviewed change is merged and deployed.
++
++## Relationship to the corpus and reported evaluation
++
++All 620 existing keys resolve to the same descriptor ID, canonical label, record class, PA flag and match type in the new snapshot. This does **not** imply that every complete strategy has identical output: a previously uncached heading can now resolve and change an audit event, canonical label, field or PA branch. Any results produced under the new terminology profile must be labelled as such rather than retroactively substituted for the original evaluation.
++
