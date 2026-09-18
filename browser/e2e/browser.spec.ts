@@ -45,9 +45,9 @@ test('unsafe update-date OR is blocked; literal phrase OR survives',async({page}
   await convert(page,'1 "law or polic*".tw.');
   await expect(page.locator('#query')).toHaveValue('"law or polic*"[tw]');
 });
-test('cache fallback is visible and result reports local rather than live validation',async({page})=>{
-  await page.goto('/');await convert(page,'1 exp Asthma/');
-  await expect(page.locator('#preview-notice')).toContainText('cache is empty');
+test('populated cache provenance and unresolved-heading fallback are both visible',async({page})=>{
+  await page.goto('/');await convert(page,'1 telepsychiatry/');
+  await expect(page.locator('#preview-notice')).toContainText('620 verified exact records');
   await expect(page.locator('#warning-list')).toContainText('not verified');
   await expect(page.locator('#query-note')).toContainText('not submitted to PubMed');
 });
