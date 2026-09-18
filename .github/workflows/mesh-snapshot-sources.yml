@@ -1,0 +1,69 @@
+name: Acquire MeSH 2026 sources
+
+on:
+  push:
+    branches: [feature/mesh-2026-exact-snapshot]
+    paths: ['.github/workflows/mesh-snapshot-sources.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download official NLM source files and record byte hashes
+        shell: bash
+        run: |
+          mkdir -p mesh-source-bundle
+          python - <<'PY'
+          import gzip, hashlib, json, time
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+          root = Path('mesh-source-bundle')
+          base = 'https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/'
+          manifest = {'mesh_year': 2026, 'sources': [], 'notice': 'Courtesy of the U.S. National Library of Medicine. Frozen source files, not a live service; NLM does not endorse this project.'}
+          for name in ('desc2026.gz', 'supp2026.gz', 'qual2026.xml'):
+              url = base + name
+              target = root / name
+              for attempt in range(4):
+                  try:
+                      req = Request(url, headers={'User-Agent': 'ClinSearch-CrossWalk/MeSH-snapshot (+https://github.com/yuewu57/ClinSearch-Crosswalk)'})
+                      with urlopen(req, timeout=120) as response, target.open('wb') as out:
+                          final_url = response.url
+                          headers = {k: response.headers.get(k) for k in ('Last-Modified', 'ETag', 'Content-Length', 'Content-Type')}
+                          while block := response.read(1024 * 1024):
+                              out.write(block)
+                      break
+                  except Exception:
+                      target.unlink(missing_ok=True)
+                      if attempt == 3:
+                          raise
+                      time.sleep(2 ** attempt)
+              digest = hashlib.sha256(target.read_bytes()).hexdigest()
+              opener = gzip.open if name.endswith('.gz') else open
+              with opener(target, 'rb') as handle:
+                  prefix = handle.read(4000).decode('utf-8')
+              if 'RecordSet' not in prefix or '<html' in prefix.lower():
+                  raise ValueError(f'Not a MeSH XML document: {name}')
+              item = {'file': name, 'url': url, 'final_url': final_url, 'downloaded_at_utc': datetime.now(timezone.utc).isoformat(), 'sha256': digest, 'bytes': target.stat().st_size, 'http': headers, 'xml_prefix': prefix[:1000]}
+              manifest['sources'].append(item)
+              print(json.dumps(item, ensure_ascii=False))
+          (root / 'source_manifest_v1_YW_18092026.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+          PY
+          git archive HEAD | gzip -n > mesh-source-bundle/repository_source_v1_YW_18092026.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mesh-2026-official-sources
+          path: mesh-source-bundle/
+          compression-level: 0
+          retention-days: 30
