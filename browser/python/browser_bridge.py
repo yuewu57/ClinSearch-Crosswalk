@@ -94,7 +94,7 @@ def _run(request, cache):
     if not isinstance(cache, dict) or cache.get('schema_version') != 1:
         raise ValueError('browser_cache_schema_invalid')
     if not isinstance(cache.get('records'), dict):
-        raise ValueError('browser_cache_records_invalid')
+        raise TypeError('browser_cache_records_invalid')
     resolver = MeshResolver(cache_path=None, mode='cache-only')
     resolver.records = dict(cache['records'])
     resolver.mesh_year = cache.get('mesh_year')
@@ -123,7 +123,7 @@ def run_request_json(request_json, cache_json):
     """One request in, one JSON result out; no user data persists between calls."""
     try:
         value = _run(json.loads(request_json), json.loads(cache_json))
-    except (ValueError, UnicodeError, RecursionError, MemoryError) as exc:
+    except (TypeError, ValueError, UnicodeError, RecursionError, MemoryError) as exc:
         # Do not echo potentially confidential source text in error messages.
         known = str(exc).split(':', 1)[0]
         code = known if known.startswith(('browser_', 'rtf_', 'invalid_rtf_', 'one_line_')) else 'browser_input_processing_failed'

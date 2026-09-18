@@ -14,9 +14,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
-from ovid_pubmed_converter.engine import MeshResolver  # noqa: E402
-from ovid_pubmed_converter.outputs import audit_csv, converted_rtf, one_line_query, strategy_text  # noqa: E402
-from ovid_pubmed_converter.web_service import convert_paste, convert_rtf  # noqa: E402
+from ovid_pubmed_converter.engine import MeshResolver
+from ovid_pubmed_converter.outputs import (
+    audit_csv,
+    converted_rtf,
+    one_line_query,
+    strategy_text,
+)
+from ovid_pubmed_converter.web_service import convert_paste, convert_rtf
 
 REFERENCE_COMMIT = '8ca2ca49984d13e466ae12332964f3131e49ee64'
 DEST = ROOT / 'browser/parity'
