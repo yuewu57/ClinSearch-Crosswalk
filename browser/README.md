@@ -1,6 +1,6 @@
-# ClinSearch-Crosswalk browser preview
+# ClinSearch-CrossWalk browser release candidate
 
-This development branch provides a TypeScript interface and worker around the **unchanged Python reference engine running locally through Pyodide/WebAssembly**. It is not an independent TypeScript rewrite. There is no conversion server and no live MeSH call.
+This branch provides a TypeScript interface and Web Worker around the **unchanged Python reference engine running locally through Pyodide/WebAssembly**. It is not an independent TypeScript rewrite. There is no conversion server and no live MeSH call.
 
 ## Run locally
 
@@ -13,21 +13,21 @@ npm ci
 npm run dev
 ```
 
-Open the local address printed by Vite (normally http://127.0.0.1:5173). First use loads the self-hosted runtime, about 12 MiB uncompressed. Loading is not instant; progress, cancellation and initialization timeout are provided.
+Open the address printed by Vite (normally `http://127.0.0.1:5173`).
 
-To test a built static site with production security headers:
+To test the production build:
 
 ```powershell
 npm run build
 node scripts/serve-preview.mjs
 ```
 
-Open http://127.0.0.1:4173. Do not double-click dist/index.html: workers, WebAssembly and integrity checks require HTTP(S); localhost is supported for development.
+Open `http://127.0.0.1:4173`. Do not double-click `dist/index.html`: workers, WebAssembly and integrity checks require HTTP(S).
 
 ## Verify
 
 ```powershell
-# Repository root; existing Python environment
+# repository root
 python -m pytest -q
 ruff check .
 cd browser
@@ -38,26 +38,32 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-The parity tests generate native expected values independently from the Python public API for 88 cases, including existing fixtures in paste and RTF modes. They compare all structured results, final queries, audit fields and rendered exports with WebAssembly outputs, repeating each case. Additional tests cover integrity, resource limits and data/code separation. These tests demonstrate parity on tested cases, not universal correctness or live PubMed retrieval equivalence. CI reports are the pass/fail evidence for each commit.
+Native/WebAssembly parity tests compare structured results, final queries, audit fields and rendered exports across deterministic fixture cases, including repeated execution. These tests demonstrate parity on covered cases, not universal correctness or live PubMed retrieval equivalence.
 
 ## Reference and build integrity
 
-Reference commit: `8ca2ca49984d13e466ae12332964f3131e49ee64`. Build-time hashes prevent silent edits to reference modules. The generated runtime manifest records source, bridge, cache and runtime provenance. Python modules are copied without conversion-rule edits. User search text is passed as JSON data, never evaluated as Python.
+Reference commit: `8ca2ca49984d13e466ae12332964f3131e49ee64`.
+
+Build-time hashes prevent silent edits to pinned reference modules. The generated runtime manifest records source, bridge, cache and runtime provenance. User search text is passed as JSON data, never evaluated as Python.
 
 ## Terminology cache
 
-The repository currently contains an **empty production starter cache**. The preview reports this and uses audited source-heading fallback. It does not fabricate metadata or copy synthetic fixtures into production. Verified canonicalisation and pharmacological-action expansion require the same populated, frozen MeSH cache used by the reference run. Empty-cache behaviour is not equivalent to an online-enriched Streamlit session.
+The repository currently contains an **empty production starter cache**. It is acceptable for development fallback testing but is not the final release terminology bundle.
 
-A maintainer may supply a reviewed dated cache under `resources/` using the existing naming convention, or set `MESH_CACHE_PATH` relative to the repository root at build time. The app never accepts arbitrary filesystem paths. Test caches stay in `parity/`, not production assets. Structural checks rejecting fixture IDs and malformed records are not proof of metadata authenticity.
+A release-grade cache must be populated, frozen and provenance-checked:
+
+```powershell
+python scripts/validate_mesh_cache_release.py path\to\cache.json
+```
+
+See `../docs/mesh_cache_provenance_v1_YW_18092026.md`. The browser build rejects malformed/synthetic production records but structural validation alone is not proof of metadata authenticity.
 
 ## Features and limits
 
 Paste/RTF input; final query; numbered strategy; original-row audit; JSON report; CSV export. Copy and query download are disabled after failure, cancellation or input edits. There are no accounts, analytics, persistent uploads or external conversion calls.
 
-Adapter limits: 2 MiB input, 1,000 reconstructed rows, nesting/dependency depth 100, 30-second conversion timeout and bounded final-query expansion. These are explicit browser resource limits, not conversion-rule changes.
+Adapter limits: 2 MiB input, 1,000 reconstructed rows, nesting/dependency depth 100, 30-second conversion timeout and bounded final-query expansion. These are browser resource limits, not conversion-rule changes.
 
-## Release boundary
+## Release gate
 
-Development preview only. Do not merge or publicly deploy without reviewing the runtime decision, production cache, real-corpus acceptance results and release/licensing approvals. See `../docs/browser_runtime_decision_v1_YW_18092026.md` and `../docs/browser_deployment_v1_YW_18092026.md`.
-
-The PolyForm Noncommercial licence is unchanged. This work does not change repository visibility, branding rights or attribution.
+Do not declare the browser build a final public research release until the populated cache, representative real-corpus acceptance set, CI evidence, licensing review and release metadata are complete. See `../RELEASE_CHECKLIST.md` and `../docs/browser_deployment_v1_YW_18092026.md`.

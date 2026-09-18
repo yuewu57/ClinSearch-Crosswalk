@@ -1,31 +1,18 @@
-# Codex integration note — fixture suite v2
+# Development integration note — regression fixtures
 
-Copy the `tests/` directory into the repository root.
+The automated harness must:
 
-The eventual automated harness should:
+1. discover fixture folders under `tests/fixtures/`;
+2. load each fixture definition and input options;
+3. run the paste-mode strategy through the shared parser and converter;
+4. run the corresponding RTF through the deterministic RTF parser and the same converter;
+5. inject fixture-only deterministic MeSH metadata where present;
+6. require paste and RTF modes to produce the same approved expected PubMed strategy;
+7. assert the expected validation status;
+8. assert all required audit substrings;
+9. assert forbidden output/audit substrings are absent;
+10. run the targeted conformance suite in addition to the fixture regression suite.
 
-1. discover fixture folders through `tests/fixtures/manifest.json`;
-2. load `fixture.json`;
-3. run `input_strategy.txt` through paste-mode parsing;
-4. run `input.rtf` through RTF parsing;
-5. apply `input_options.json`;
-6. inject `mesh_records.json` as deterministic test MeSH metadata where present;
-7. assert both input modes produce `expected_pubmed.txt`;
-8. assert `expected_validation_status`;
-9. assert each `required_audit_substrings` value is present somewhere in audit;
-10. assert forbidden output/audit substrings are absent.
+All currently maintained numbered fixtures are expected to pass. Historical known-fail notes for RTF code-page handling and year-leading continuations are obsolete because those implementation gaps have been corrected and are now regression-covered.
 
-Semantic output should be exact unless the normative specification is
-deliberately versioned.
-
-Current expected reference baseline:
-
-- 14/16 fixtures pass;
-- `10_rtf_codepage_cp1252` is an intentional KNOWN_FAIL;
-- `12_year_leading_continuation` is an intentional KNOWN_FAIL.
-
-`11_split_list_numbering` is intentionally separated from the year-leading
-continuation defect and should pass.
-
-Do not weaken fixtures 10 or 12 to make the old implementation pass. Correct
-the implementation to satisfy normative v20.
+Do not weaken a fixture to accommodate an implementation change. When a semantic change is intended, version the normative specification/ruleset first, then update the executable and regression oracle with an explicit rationale.

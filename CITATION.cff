@@ -1,10 +1,11 @@
 cff-version: 1.2.0
-title: "ClinSearch-CrossWalk: a Clinical Search Convertor: Ovid MEDLINE to PubMed"
-message: "Please cite the software version used; add the associated paper once available."
+title: "ClinSearch-CrossWalk: auditable Ovid MEDLINE-to-PubMed search-strategy translation"
+message: "Please cite the exact software release used; the associated paper and archive DOI will be added when available."
 type: software
 version: 0.1.2
 license: PolyForm-Noncommercial-1.0.0
 authors:
   - name: "ClinSearch-CrossWalk contributors"
 repository-code: "https://github.com/yuewu57/ClinSearch-Crosswalk"
-# Before publication, confirm the author list and add the actual release date and DOI.
+# Release date, immutable archive/DOI and approved software contributor metadata
+# must be added only when the research release is frozen.

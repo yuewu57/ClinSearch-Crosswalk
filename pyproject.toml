@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ovid-pubmed-converter"
 version = "0.1.2"
-description = "ClinSearch-CrossWalk Ovid MEDLINE to PubMed search strategy convertor"
+description = "ClinSearch-CrossWalk Ovid MEDLINE to PubMed search strategy converter"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
 
@@ -25,5 +25,4 @@ line-length = 100
 exclude = [
   "reference",
   "src/ovid_pubmed_converter/engine.py",
-  "cochrane_data_pubmed_converter_v20_cli_v2_YW_16082026.py",
 ]

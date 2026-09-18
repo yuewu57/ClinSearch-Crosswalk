@@ -1,11 +1,16 @@
-ClinSearch-CrossWalk: a Clinical Search Convertor: Ovid MEDLINE to PubMed
+ClinSearch-CrossWalk
 Copyright 2026 ClinSearch-CrossWalk contributors
 Required Notice: Copyright 2026 ClinSearch-CrossWalk contributors
 
-This release is offered under the PolyForm Noncommercial License 1.0.0.
-See LICENSE and docs/licensing.md. This notice does not revoke rights
-previously granted for earlier versions, or relicense third-party works.
+This source-available release candidate is offered under the PolyForm
+Noncommercial License 1.0.0. See LICENSE and docs/licensing.md. This notice
+does not revoke rights previously granted for earlier versions or relicense
+third-party works.
 
-This product may use Medical Subject Headings (MeSH) terminology and services from the U.S. National Library of Medicine. MeSH and other NLM terminology resources are not licensed under the project's software licence. NLM does not endorse this software.
+This product may use Medical Subject Headings (MeSH) terminology and services
+from the U.S. National Library of Medicine. MeSH and other NLM terminology
+resources are not licensed under the project's software licence. NLM does not
+endorse this software.
 
-Cochrane and Ovid are trademarks or names of their respective owners. This independent project is not affiliated with or endorsed by Cochrane, Ovid, or NLM.
+Cochrane and Ovid are trademarks or names of their respective owners. This
+independent project is not affiliated with or endorsed by Cochrane, Ovid, or NLM.
