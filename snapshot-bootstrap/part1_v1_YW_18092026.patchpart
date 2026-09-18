@@ -1,0 +1,375 @@
+--- /dev/null
++++ b/.gitattributes
+@@ -0,0 +1,3 @@
++resources/mesh_resolution_cache_v20_v1_YW_18092026.json -text
++resources/mesh2026/*.json text eol=lf
++resources/mesh2026/*.gz -text
+--- /dev/null
++++ b/resources/mesh2026_source_lock_v1_YW_18092026.json
+@@ -0,0 +1,48 @@
++{
++  "mesh_year": 2026,
++  "sources": [
++    {
++      "file": "desc2026.gz",
++      "url": "https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/desc2026.gz",
++      "final_url": "https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/desc2026.gz",
++      "downloaded_at_utc": "2026-09-18T17:44:39.373277+00:00",
++      "sha256": "ccd4d0d33bebfd4c836a59e7dd0c635b1d4e20c4f5a6abc55e2eb0ba4c8716dd",
++      "bytes": 16812612,
++      "http": {
++        "Last-Modified": "Wed, 12 Aug 2026 18:33:47 GMT",
++        "ETag": "\"1008a44-658ddd3fe86cb\"",
++        "Content-Length": "16812612",
++        "Content-Type": null
++      }
++    },
++    {
++      "file": "supp2026.gz",
++      "url": "https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/supp2026.gz",
++      "final_url": "https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/supp2026.gz",
++      "downloaded_at_utc": "2026-09-18T17:44:40.455412+00:00",
++      "sha256": "5d487dbb55807724465065f5c0945c630290a0a6decee14618f5380c574d87ab",
++      "bytes": 47287269,
++      "http": {
++        "Last-Modified": "Wed, 12 Aug 2026 18:34:09 GMT",
++        "ETag": "\"2d18be5-658ddd5439a8e\"",
++        "Content-Length": "47287269",
++        "Content-Type": null
++      }
++    },
++    {
++      "file": "qual2026.xml",
++      "url": "https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/qual2026.xml",
++      "final_url": "https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/qual2026.xml",
++      "downloaded_at_utc": "2026-09-18T17:44:40.783600+00:00",
++      "sha256": "5b4ca9ca9bd8019113e77132ebf7a16f915213c3e9d32a784defd96900a955dd",
++      "bytes": 290948,
++      "http": {
++        "Last-Modified": "Wed, 12 Aug 2026 18:10:22 GMT",
++        "ETag": "\"47084-658dd80315f80\"",
++        "Content-Length": "290948",
++        "Content-Type": "text/xml"
++      }
++    }
++  ],
++  "notice": "Courtesy of the U.S. National Library of Medicine. Frozen source files, not a live service; NLM does not endorse this project."
++}
+--- /dev/null
++++ b/scripts/build_mesh_2026_snapshot_v1_YW_18092026.py
+@@ -0,0 +1,283 @@
++"""Build frozen English MeSH 2026 exact-label resources from hash-locked NLM XML.
++
++The descriptor browser file includes all DescriptorName and Term/String labels.
++SCR and qualifier exact indexes are separate: they are NOT coerced to descriptors.
++PA target flags use direct edges from BOTH descriptor and SCR XML, not ancestry.
++No raw history-note parsing, fuzzy matching or benchmark-specific corrections.
++"""
++from __future__ import annotations
++
++import argparse
++import gzip
++import hashlib
++import io
++import json
++import sys
++import xml.etree.ElementTree as ET
++from collections import Counter, defaultdict
++from pathlib import Path
++
++ROOT = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(ROOT / "src"))
++from ovid_pubmed_converter.engine import (  # noqa: E402
++    HISTORICAL_MESH_ALIASES,
++    _mesh_cache_key,
++)
++
++STAMP = "v1_YW_18092026"
++CLASSES = {"1": "TopicalDescriptor", "2": "PublicationType", "3": "CheckTag",
++           "4": "GeographicalDescriptor"}
++NOTICE = ("Courtesy of the U.S. National Library of Medicine. This is a frozen "
++          "2026 snapshot, not necessarily the most current NLM data. "
++          "NLM does not endorse ClinSearch-CrossWalk.")
++
++
++def sha_file(path: Path) -> str:
++    h = hashlib.sha256()
++    with path.open("rb") as stream:
++        for block in iter(lambda: stream.read(1024 * 1024), b""):
++            h.update(block)
++    return h.hexdigest()
++
++
++def read_records(path: Path, root_tag: str, record_tag: str):
++    """Stream complete top-level records; do not fetch a DTD or resolve entities."""
++    opener = gzip.open if path.suffix == ".gz" else open
++    with opener(path, "rb") as stream:
++        context = ET.iterparse(stream, events=("start", "end"))
++        _, root = next(context)
++        if root.tag != root_tag or root.attrib.get("LanguageCode") != "eng":
++            raise ValueError(f"Wrong XML root/language in {path.name}")
++        for event, node in context:
++            if event == "end" and node.tag == record_tag:
++                yield node
++                node.clear()
++                root.clear()
++
++
++def label_set(record, canonical: str) -> set[str]:
++    # Term/String includes terms in all concepts, not only the preferred concept.
++    return {canonical} | {
++        n.text.strip() for n in record.findall("./ConceptList/Concept/TermList/Term/String")
++        if n.text and n.text.strip()
++    }
++
++
++def pa_targets(record) -> set[str]:
++    return {n.text.strip() for n in record.findall(
++        "./PharmacologicalActionList/PharmacologicalAction/DescriptorReferredTo/DescriptorUI"
++    ) if n.text}
++
++
++def collect(path: Path, kind: str):
++    names = {
++        "descriptor": ("Descriptor", "DescriptorUI", "DescriptorName"),
++        "supplementary": ("Supplemental", "SupplementalRecordUI", "SupplementalRecordName"),
++        "qualifier": ("Qualifier", "QualifierUI", "QualifierName"),
++    }
++    prefix, ui_tag, label_tag = names[kind]
++    records, preferred, terms = {}, defaultdict(set), defaultdict(set)
++    actions, class_counts = Counter(), Counter()
++    term_occurrences = 0
++    latest_record_date = ""
++    for node in read_records(path, prefix + "RecordSet", prefix + "Record"):
++        ui = node.findtext(ui_tag)
++        canonical = node.findtext(label_tag + "/String")
++        if not ui or not canonical or ui in records:
++            raise ValueError(f"Missing/duplicate identity in {path.name}: {ui!r}")
++        canonical = canonical.strip()
++        clazz = node.attrib.get("DescriptorClass" if kind == "descriptor" else "SCRClass")
++        if kind == "descriptor" and clazz not in CLASSES:
++            raise ValueError(f"Unrecognised DescriptorClass {clazz!r}")
++        direct_pa = sorted(pa_targets(node))
++        actions.update(direct_pa)
++        if kind == "descriptor":
++            records[ui] = [canonical, CLASSES[clazz], False]
++        elif kind == "supplementary":
++            if clazz not in {"1", "2", "3", "4", "5", "6"}:
++                raise ValueError(f"Unrecognised SCRClass {clazz!r}")
++            # Keep original referred-to IDs (including focus markers) and qualifiers.
++            mapped = []
++            for heading in node.findall("./HeadingMappedToList/HeadingMappedTo"):
++                d = heading.findtext("./DescriptorReferredTo/DescriptorUI")
++                qs = sorted(x.text for x in heading.findall(
++                    "./QualifierReferredTo/QualifierUI") if x.text)
++                if d:
++                    mapped.append([d, qs])
++            records[ui] = [canonical, int(clazz), direct_pa, sorted(mapped)]
++        else:
++            abbreviations = sorted({n.text for n in node.findall(
++                "./ConceptList/Concept/TermList/Term/Abbreviation") if n.text})
++            records[ui] = [canonical, abbreviations]
++        class_counts[str(clazz or kind)] += 1
++        preferred[_mesh_cache_key(canonical)].add(ui)
++        labels = label_set(node, canonical)
++        term_occurrences += len(labels)
++        for label in labels:
++            key = _mesh_cache_key(label)
++            if key:
++                terms[key].add(ui)
++        updated = node.find("LastUpdated")
++        if updated is not None:
++            date = "-".join(updated.findtext(x, "") for x in ("Year", "Month", "Day"))
++            latest_record_date = max(date, latest_record_date)
++    if not records:
++        raise ValueError(f"No records read from {path}")
++    return {
++        "records": dict(sorted(records.items())),
++        "preferred": {k: sorted(v) for k, v in sorted(preferred.items())},
++        "terms": {k: sorted(v) for k, v in sorted(terms.items())},
++        "actions": actions,
++        "stats": {"records": len(records), "normalised_exact_labels": len(terms),
++                  "raw_record_label_occurrences": term_occurrences,
++                  "ambiguous_preferred_keys": sum(len(v) > 1 for v in preferred.values()),
++                  "ambiguous_entry_keys": sum(len(v) > 1 and k not in preferred
++                                              for k, v in terms.items()),
++                  "classes": dict(sorted(class_counts.items())),
++                  "latest_record_update": latest_record_date},
++    }
++
++
++def exact_candidate(data, key):
++    return data["preferred"].get(key) or data["terms"].get(key) or []
++
++
++def encode(data) -> bytes:
++    return (json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
++            + "\n").encode("utf-8")
++
++
++def write_resource(path: Path, payload: dict, *, plain: bool):
++    data = encode(payload)
++    buffer = io.BytesIO()
++    with gzip.GzipFile(filename="", mode="wb", fileobj=buffer, compresslevel=9, mtime=0) as zipped:
++        zipped.write(data)
++    compressed = buffer.getvalue()
++    if plain:
++        path.write_bytes(data)
++    gz_path = path.with_suffix(path.suffix + ".gz")
++    gz_path.write_bytes(compressed)
++    return {"file": path.name, "sha256": hashlib.sha256(data).hexdigest(),
++            "bytes": len(data), "gzip_file": gz_path.name,
++            "gzip_sha256": hashlib.sha256(compressed).hexdigest(),
++            "gzip_bytes": len(compressed)}
++
++
++def build(source_dir: Path, lock: dict, output_dir: Path, cache_path: Path) -> dict:
++    if lock.get("mesh_year") != 2026:
++        raise ValueError("Source lock is not MeSH 2026")
++    sources = {entry["file"]: entry for entry in lock["sources"]}
++    for name in ("desc2026.gz", "supp2026.gz", "qual2026.xml"):
++        metadata = sources[name]
++        path = source_dir / name
++        if sha_file(path) != metadata["sha256"] or path.stat().st_size != metadata["bytes"]:
++            raise ValueError(f"Source bytes do not match lock: {name}")
++        opener = gzip.open if name.endswith(".gz") else open
++        with opener(path, "rb") as stream:
++            header = stream.read(512).decode("utf-8")
++        if "recordset_20260101.dtd" not in header or "<!ENTITY" in header:
++            raise ValueError(f"Unexpected DTD/version in {name}")
++    original_cache_hash = sha_file(cache_path)
++    print("Reading descriptor XML", flush=True)
++    desc = collect(source_dir / "desc2026.gz", "descriptor")
++    print("Reading supplementary XML", desc["stats"], flush=True)
++    supp = collect(source_dir / "supp2026.gz", "supplementary")
++    print("Reading qualifier XML", supp["stats"], flush=True)
++    qual = collect(source_dir / "qual2026.xml", "qualifier")
++    if len(desc["records"]) < 25000 or len(supp["records"]) < 250000 or len(qual["records"]) < 70:
++        raise ValueError("Source coverage unexpectedly small; refuse a complete-snapshot claim")
++    all_pa = set(desc["actions"]) | set(supp["actions"])
++    missing_pa = sorted(all_pa - desc["records"].keys())
++    if missing_pa:
++        raise ValueError(f"PA targets absent from descriptor file: {missing_pa}")
++    for ui in all_pa:
++        desc["records"][ui][2] = True
++    aliases = {}
++    alias_issues = {}
++    for old, target in sorted(HISTORICAL_MESH_ALIASES.items()):
++        candidates = exact_candidate(desc, _mesh_cache_key(target))
++        if len(candidates) == 1:
++            aliases[_mesh_cache_key(old)] = [candidates[0], target]
++        else:
++            alias_issues[old] = {"target": target, "candidates": candidates}
++    if alias_issues:
++        raise ValueError(f"Existing reviewed aliases need review: {alias_issues}")
++    source_info = [{k: item[k] for k in ("file", "url", "sha256", "bytes", "downloaded_at_utc", "http")}
++                   for item in lock["sources"]]
++    common = {"schema_version": 2, "mesh_year": 2026,
++              "snapshot_id": "mesh2026_exact_" + STAMP,
++              "frozen_at_utc": max(item["downloaded_at_utc"] for item in lock["sources"]),
++              "source": "NLM MeSH 2026 XML; English; hash-locked full record sets",
++              "source_files": source_info, "notice": NOTICE,
++              "normalisation": "Unchanged reference _mesh_cache_key; typography/spacing/case only",
++              "reference_engine_sha256": sha_file(ROOT / "src/ovid_pubmed_converter/engine.py"),
++              "policy": "Existing reviewed aliases, then exact preferred label, then exact entry term; ambiguous candidates are not guessed"}
++    output_dir.mkdir(parents=True, exist_ok=True)
++    products = {}
++    for kind, data in (("descriptor", desc), ("supplementary", supp), ("qualifier", qual)):
++        payload = dict(common, kind="mesh-" + kind + "-exact", records=data["records"],
++                       preferred=data["preferred"], terms=data["terms"], stats=data["stats"])
++        if kind == "descriptor":
++            payload["historical_aliases"] = aliases
++            payload["pa_policy"] = "Any direct PA target in Descriptor or SCR XML; no ancestor expansion"
++            payload["stats"]["pharmacological_action_targets"] = len(all_pa)
++            payload["stats"]["pa_targets_seen_in_descriptors"] = len(desc["actions"])
++            payload["stats"]["pa_targets_seen_in_scrs"] = len(supp["actions"])
++            payload["stats"]["pa_targets_seen_only_in_scrs"] = len(set(supp["actions"]) - set(desc["actions"]))
++            payload["stats"]["reviewed_aliases"] = len(aliases)
++        products[kind] = write_resource(output_dir / f"mesh2026_{kind}_exact_{STAMP}.json", payload,
++                                        plain=kind == "descriptor")
++    # Compare new terminology against the preserved 620-key corpus cache; never rewrite it.
++    old_cache = json.loads(cache_path.read_text(encoding="utf-8"))
++    changes, same = [], 0
++    for key, old in sorted(old_cache["records"].items()):
++        candidates = [aliases[key][0]] if key in aliases else exact_candidate(desc, key)
++        if len(candidates) == 1:
++            ui = candidates[0]
++            label, clazz, pa = desc["records"][ui]
++            new = {"descriptor_id": ui, "canonical_label": label, "record_class": clazz,
++                   "is_pharmacological_action": pa}
++            fields = [f for f in new if old.get(f) != new[f]]
++            if not fields:
++                same += 1
++                continue
++            changes.append({"source_key": key, "changed_fields": fields,
++                            "old": {f: old.get(f) for f in new}, "snapshot": new})
++        else:
++            changes.append({"source_key": key, "old_descriptor_id": old.get("descriptor_id"),
++                            "snapshot_status": "ambiguous" if candidates else "unresolved",
++                            "candidate_ids": candidates})
++    if sha_file(cache_path) != original_cache_hash:
++        raise RuntimeError("Original cache unexpectedly changed")
++    report = {"snapshot_id": common["snapshot_id"], "frozen_at_utc": common["frozen_at_utc"],
++              "source_files": source_info, "products": products,
++              "builder_sha256": sha_file(Path(__file__)),
++              "counts": {"descriptor": desc["stats"], "supplementary": supp["stats"], "qualifier": qual["stats"]},
++              "preserved_cache": {"path": str(cache_path.relative_to(ROOT)),
++                                  "sha256": original_cache_hash, "records": len(old_cache["records"]),
++                                  "identical_descriptor_semantics": same, "changes": changes},
++              "scope": "Complete exact-name indexes of supplied English 2026 D/Q/SCR XML. Browser conversion consumes D only. No full scope-note/tree-text export; no invented historical mappings.",
++              "notice": NOTICE}
++    (output_dir / f"mesh2026_snapshot_manifest_{STAMP}.json").write_text(
++        json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
++    return report
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--source-dir", type=Path, required=True)
++    parser.add_argument("--source-lock", type=Path, required=True)
++    parser.add_argument("--output-dir", type=Path, required=True)
++    parser.add_argument("--preserved-cache", type=Path, default=ROOT / "resources/mesh_resolution_cache_v20_v1_YW_18092026.json")
++    args = parser.parse_args()
++    report = build(args.source_dir, json.loads(args.source_lock.read_text(encoding="utf-8")),
++                   args.output_dir, args.preserved_cache)
++    summary = {"counts": report["counts"], "products": report["products"],
++               "preserved_cache_sha256": report["preserved_cache"]["sha256"],
++               "cache_semantic_changes": len(report["preserved_cache"]["changes"])}
++    print(json.dumps(summary, indent=2))
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+--- /dev/null
++++ b/scripts/export_mesh_snapshot_acceptance_v1_YW_18092026.py
+@@ -0,0 +1,58 @@
++"""Export native reference outputs under the candidate descriptor snapshot."""
++import json
++import sys
++from dataclasses import asdict
++from pathlib import Path
++
++ROOT = Path(__file__).resolve().parents[1]
++sys.path[:0] = [str(ROOT / 'src'), str(ROOT / 'browser/python')]
++from mesh_snapshot_v1_YW_18092026 import SnapshotResolver  # noqa: E402
++from ovid_pubmed_converter.core import convert_strategy  # noqa: E402
++from ovid_pubmed_converter.outputs import audit_csv, converted_rtf, one_line_query, strategy_text  # noqa: E402
++from ovid_pubmed_converter.parser import parse_strategy_text  # noqa: E402
++
++
++def main():
++    snapshot = json.loads((ROOT / 'resources/mesh2026/mesh2026_descriptor_exact_v1_YW_18092026.json').read_text(encoding='utf-8'))
++    resolver = SnapshotResolver(snapshot)
++    sources = {
++        'new_preferred': '1 exp Narcolepsy/',
++        'case_spacing': '1 nARCoLEPsy/',
++        'new_entry': '1 Patient Education/',
++        'entry_therapy': '1 exp physical therapy techniques/',
++        'entry_stimulation': '1 electrical stimulation/',
++        'entry_cellphones': '1 Cell Phones/',
++        'entry_occupation': '1 occupational therapist/',
++        'entry_physical': '1 physical therapist/',
++        'historical': '1 heart failure, congestive/',
++        'missing': '1 telepsychiatry/',
++        'misspelled': '1 Card iac Output/',
