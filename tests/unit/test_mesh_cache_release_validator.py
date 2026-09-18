@@ -2,7 +2,6 @@ import importlib.util
 import json
 import pathlib
 
-
 SCRIPT = pathlib.Path(__file__).parents[2] / "scripts" / "validate_mesh_cache_release.py"
 SPEC = importlib.util.spec_from_file_location("validate_mesh_cache_release", SCRIPT)
 MODULE = importlib.util.module_from_spec(SPEC)
