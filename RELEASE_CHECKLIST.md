@@ -16,11 +16,11 @@ This checklist separates work that is already implemented from evidence still re
 - [x] Exact-only MeSH resolver; no fuzzy matching.
 - [x] Empty starter cache clearly identified as non-release.
 - [x] Release-cache provenance validator added.
-- [ ] Locate or regenerate the populated terminology cache.
-- [ ] Validate cache structure/provenance.
-- [ ] Record cache filename, SHA-256, MeSH year, generation timestamp/source and record count.
-- [ ] Confirm no synthetic fixture records are present.
-- [ ] Freeze the cache used for final acceptance/benchmark confirmation.
+- [x] Locate or regenerate the populated terminology cache.
+- [x] Validate cache structure/provenance.
+- [x] Record cache filename, MeSH year, generation timestamp/source and record count; the build manifest records its SHA-256 for the frozen candidate.
+- [x] Confirm no synthetic fixture records are present.
+- [ ] Freeze the dated cache with the final acceptance/benchmark-confirmation commit.
 
 ## Verification
 
