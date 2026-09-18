@@ -1,4 +1,4 @@
-"""ClinSearch-CrossWalk: a Clinical Search Convertor: Ovid MEDLINE to PubMed."""
+"""ClinSearch-CrossWalk reference conversion package."""
 
 from .core import convert_strategy
 from .models import ConversionResult, Strategy, StrategyRow, ValidationStatus

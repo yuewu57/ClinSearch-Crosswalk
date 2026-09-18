@@ -1,14 +1,26 @@
-name: Browser port quality
+name: Browser release quality
+
 on:
   push:
-    branches: [feature/browser-typescript-v1]
+    branches: [main, feature/browser-typescript-v1]
   pull_request:
-    paths: ['browser/**', 'scripts/export_browser_parity.py', 'src/**', 'resources/**', 'docs/cochrane_ovid_pubmed_conversion_rules*.md', '.github/workflows/browser-port-ci.yml']
+    paths:
+      - 'browser/**'
+      - 'scripts/export_browser_parity.py'
+      - 'scripts/validate_mesh_cache_release.py'
+      - 'src/**'
+      - 'resources/**'
+      - 'tests/**'
+      - 'docs/cochrane_ovid_pubmed_conversion_rules*.md'
+      - '.github/workflows/browser-port-ci.yml'
+
 permissions:
   contents: read
+
 concurrency:
-  group: browser-port-${{ github.ref }}
+  group: browser-release-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
   python-reference:
     runs-on: ubuntu-latest
@@ -24,12 +36,15 @@ jobs:
       - run: python -m pytest -q --junitxml=python-reference-results.xml
       - run: ruff check .
       - run: python scripts/export_browser_parity.py --check
+      - name: Validate development starter-cache structure
+        run: python scripts/validate_mesh_cache_release.py resources/mesh_resolution_cache_v20_v1.json --allow-empty
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: native-reference-results
           path: python-reference-results.xml
           retention-days: 7
+
   browser:
     runs-on: ubuntu-latest
     needs: python-reference
@@ -58,7 +73,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
         working-directory: browser
       - run: npm run test:e2e
-        working-directory: browser
+        working_directory: browser
       - uses: actions/upload-artifact@v4
         if: always()
         with:
