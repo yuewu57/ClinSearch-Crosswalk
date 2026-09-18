@@ -48,22 +48,30 @@ def validate_cache(path: Path, *, require_nonempty: bool = True) -> dict:
     if payload.get("schema_version") != 1:
         errors.append("schema_version_must_equal_1")
 
-    mesh_year = payload.get("mesh_year")
-    if not isinstance(mesh_year, int):
-        errors.append("mesh_year_missing_or_not_integer")
-
-    generated_at = payload.get("generated_at_utc")
-    if not _valid_timestamp(generated_at):
-        errors.append("generated_at_utc_missing_or_not_timezone_aware")
-
-    source = payload.get("source")
-    if not isinstance(source, str) or not source.strip():
-        errors.append("source_missing")
-
     records = payload.get("records")
     if not isinstance(records, dict):
         errors.append("records_must_be_an_object")
         records = {}
+
+    is_empty_development_cache = not records and not require_nonempty
+
+    mesh_year = payload.get("mesh_year")
+    if not isinstance(mesh_year, int):
+        if is_empty_development_cache and mesh_year is None:
+            warnings.append("mesh_year_unset_for_empty_development_cache")
+        else:
+            errors.append("mesh_year_missing_or_not_integer")
+
+    generated_at = payload.get("generated_at_utc")
+    if not _valid_timestamp(generated_at):
+        if is_empty_development_cache and generated_at is None:
+            warnings.append("generated_at_utc_unset_for_empty_development_cache")
+        else:
+            errors.append("generated_at_utc_missing_or_not_timezone_aware")
+
+    source = payload.get("source")
+    if not isinstance(source, str) or not source.strip():
+        errors.append("source_missing")
 
     if require_nonempty and not records:
         errors.append("release_cache_is_empty")
