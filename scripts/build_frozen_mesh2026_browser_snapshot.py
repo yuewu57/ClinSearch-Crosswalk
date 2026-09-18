@@ -33,7 +33,7 @@ SOURCES = {
 }
 EXPECTED_SNAPSHOT_SHA256 = "7ebdeba5e6c6d09b154e053e57777d746b51939a50bad8deac5b14bd07c7a6da"
 EXPECTED_SNAPSHOT_BYTES = 12222418
-EXPECTED_EVALUATION_CACHE_SHA256 = "57757954475335803962f7336f384966642f50766bf79e13e784126c26af4370"
+EXPECTED_EVALUATION_CACHE_CANONICAL_SHA256 = "34467e3deb46ec6a6709ad0123bf86f7d637aaec091e2a149437c03770b71caf"
 EXPECTED_ENGINE_SHA256 = "004ba1b5001cff625ccc1e5d703adf56b2312d7510370327e2514c6070b84348"
 YEAR = 2026
 
@@ -48,6 +48,15 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def canonical_json_sha256(path: Path) -> str:
+    value = json.loads(path.read_text(encoding="utf-8-sig"))
+    raw = (
+        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        + "\n"
+    ).encode("utf-8")
+    return sha256_bytes(raw)
 
 
 def check_xml_header(prefix: bytes) -> None:
@@ -147,8 +156,8 @@ def build(repo: Path, source_dir: Path) -> bytes:
         raise ValueError("Reference engine differs from frozen snapshot provenance")
 
     evaluation_cache = repo / "resources/mesh_resolution_cache_v20_v1_YW_18092026.json"
-    if sha256_file(evaluation_cache) != EXPECTED_EVALUATION_CACHE_SHA256:
-        raise ValueError("The 620-record evaluation cache changed")
+    if canonical_json_sha256(evaluation_cache) != EXPECTED_EVALUATION_CACHE_CANONICAL_SHA256:
+        raise ValueError("The 620-record evaluation cache changed semantically")
 
     descriptors: dict[str, list] = {}
     preferred = defaultdict(set)
