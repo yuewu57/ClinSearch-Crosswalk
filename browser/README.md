@@ -48,12 +48,12 @@ Build-time hashes prevent silent edits to pinned reference modules. The generate
 
 ## Terminology cache
 
-The repository currently contains an **empty production starter cache**. It is acceptable for development fallback testing but is not the final release terminology bundle.
+The repository retains an empty starter cache for fallback testing and now includes the populated release-candidate cache `resources/mesh_resolution_cache_v20_v1_YW_18092026.json` (MeSH 2026; 620 exact resolved records). The browser build selects the newest dated cache by default.
 
 A release-grade cache must be populated, frozen and provenance-checked:
 
 ```powershell
-python scripts/validate_mesh_cache_release.py path\to\cache.json
+python scripts/validate_mesh_cache_release.py ..\resources\mesh_resolution_cache_v20_v1_YW_18092026.json
 ```
 
 See `../docs/mesh_cache_provenance_v1_YW_18092026.md`. The browser build rejects malformed/synthetic production records but structural validation alone is not proof of metadata authenticity.
@@ -66,4 +66,4 @@ Adapter limits: 2 MiB input, 1,000 reconstructed rows, nesting/dependency depth 
 
 ## Release gate
 
-Do not declare the browser build a final public research release until the populated cache, representative real-corpus acceptance set, CI evidence, licensing review and release metadata are complete. See `../RELEASE_CHECKLIST.md` and `../docs/browser_deployment_v1_YW_18092026.md`.
+Do not declare the browser build a final public research release until the populated cache has completed representative real-corpus acceptance testing and the remaining CI, licensing, deployment and release-metadata gates are complete. See `../RELEASE_CHECKLIST.md` and `../docs/browser_deployment_v1_YW_18092026.md`.
