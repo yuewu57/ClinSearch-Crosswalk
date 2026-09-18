@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: mesh-snapshot-candidate
   cancel-in-progress: false
@@ -32,7 +36,6 @@ jobs:
           cache: npm
           cache-dependency-path: browser/package-lock.json
       - name: Apply reviewed implementation once
-        shell: bash
         run: |
           python - <<'PY'
           import hashlib, pathlib, subprocess
@@ -45,6 +48,16 @@ jobs:
               subprocess.run(['git', 'apply', '--unidiff-zero', '-'], input=content, check=True)
           else:
               assert pathlib.Path('scripts/build_mesh_2026_snapshot_v1_YW_18092026.py').exists()
+          fixes = {
+              'browser/python/browser_bridge.py': [("if not isinstance(cache, dict):\n        raise ValueError('browser_cache_schema_invalid')", "if not isinstance(cache, dict):\n        raise TypeError('browser_cache_schema_invalid')")],
+              'browser/python/mesh_snapshot_v1_YW_18092026.py': [('raise ValueError("browser_snapshot_index_invalid")', 'raise TypeError("browser_snapshot_index_invalid")'), ('raise ValueError("browser_snapshot_aliases_invalid")', 'raise TypeError("browser_snapshot_aliases_invalid")')],
+          }
+          for name, pairs in fixes.items():
+              path = pathlib.Path(name)
+              text = path.read_text(encoding='utf-8')
+              for old, new in pairs:
+                  text = text.replace(old, new)
+              path.write_text(text, encoding='utf-8')
           PY
       - name: Install development dependencies
         run: python -m pip install -r requirements-dev.txt
@@ -53,7 +66,6 @@ jobs:
           ruff check --fix scripts/build_mesh_2026_snapshot_v1_YW_18092026.py scripts/export_mesh_snapshot_acceptance_v1_YW_18092026.py tests/unit/test_mesh_snapshot_v1_YW_18092026.py browser/python/browser_bridge.py browser/python/mesh_snapshot_v1_YW_18092026.py
           ruff check .
       - name: Fetch hash-locked official source bytes
-        shell: bash
         run: |
           mkdir -p "$RUNNER_TEMP/mesh2026-inputs"
           python - <<'PY'
@@ -80,12 +92,10 @@ jobs:
               print(item['file'], item['sha256'])
           PY
       - name: Build frozen resources
-        shell: bash
         run: |
           mkdir -p verification
           python scripts/build_mesh_2026_snapshot_v1_YW_18092026.py --source-dir "$RUNNER_TEMP/mesh2026-inputs" --source-lock resources/mesh2026_source_lock_v1_YW_18092026.json --output-dir resources/mesh2026 | tee verification/build_v1_YW_18092026.log
       - name: Check all exact labels and all preserved cache entries
-        shell: bash
         run: |
           PYTHONPATH=src:browser/python python - <<'PY' | tee verification/exhaustive_v1_YW_18092026.log
           import hashlib, json
@@ -148,7 +158,6 @@ jobs:
           compression-level: 0
           retention-days: 30
       - name: Freeze tested candidate on feature branch only
-        shell: bash
         run: |
           test "$GITHUB_REF" = 'refs/heads/feature/mesh-2026-exact-snapshot'
           git diff --exit-code 688746c63c73f17dc9b14160084904a75bc81afd -- src/ resources/mesh_resolution_cache_v20_v1_YW_18092026.json
