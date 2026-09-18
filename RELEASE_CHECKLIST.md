@@ -20,7 +20,7 @@ This checklist separates work that is already implemented from evidence still re
 - [x] Validate cache structure/provenance.
 - [x] Record cache filename, MeSH year, generation timestamp/source and record count; the build manifest records its SHA-256 for the frozen candidate.
 - [x] Confirm no synthetic fixture records are present.
-- [ ] Freeze the dated cache with the final acceptance/benchmark-confirmation commit.
+- [x] Preserve the dated 620-record evaluation cache separately from the public full-terminology snapshot.
 
 ## Verification
 
@@ -38,11 +38,11 @@ This checklist separates work that is already implemented from evidence still re
 - [x] Associated-paper block with placeholder rather than invented URL.
 - [x] Browser CSP embedded in the static entry document; optional response-header file retained for hosts that support it.
 - [x] Select production static host: GitHub Pages.
-- [ ] Enable Pages with GitHub Actions after branch review/merge, then deploy the HTTPS site.
-- [ ] Verify MIME types, headers and runtime loading on the real URL.
+- [x] Enable GitHub Pages Actions and deploy the HTTPS release-candidate site.
+- [ ] Verify runtime loading and representative conversion behaviour manually on the deployed URL.
 - [ ] Verify desktop and mobile acceptance cases.
 - [ ] Remove development/noindex notices only after release approval.
-- [ ] Add final application URL to release documentation.
+- [x] Record the deployed application URL: https://yuewu57.github.io/ClinSearch-Crosswalk/
 
 ## Repository and metadata
 
