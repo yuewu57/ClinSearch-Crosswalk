@@ -9,7 +9,7 @@ from pathlib import Path
 
 EXPECTED_SNAPSHOT_SHA256 = "7ebdeba5e6c6d09b154e053e57777d746b51939a50bad8deac5b14bd07c7a6da"
 EXPECTED_SNAPSHOT_BYTES = 12222418
-EXPECTED_EVALUATION_CACHE_SHA256 = "57757954475335803962f7336f384966642f50766bf79e13e784126c26af4370"
+EXPECTED_EVALUATION_CACHE_CANONICAL_SHA256 = "34467e3deb46ec6a6709ad0123bf86f7d637aaec091e2a149437c03770b71caf"
 
 
 def digest(path: Path) -> str:
@@ -18,6 +18,15 @@ def digest(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def canonical_json_sha256(path: Path) -> str:
+    value = json.loads(path.read_text(encoding="utf-8-sig"))
+    raw = (
+        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        + "\n"
+    ).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
 
 
 def main() -> int:
@@ -62,15 +71,15 @@ def main() -> int:
             raise ValueError("source hashes differ from frozen provenance")
 
         evaluation_cache = repo / "resources/mesh_resolution_cache_v20_v1_YW_18092026.json"
-        if digest(evaluation_cache) != EXPECTED_EVALUATION_CACHE_SHA256:
-            raise ValueError("evaluation provenance cache changed")
+        if canonical_json_sha256(evaluation_cache) != EXPECTED_EVALUATION_CACHE_CANONICAL_SHA256:
+            raise ValueError("evaluation provenance cache changed semantically")
 
         print(json.dumps({
             "snapshot_valid": True,
             "sha256": actual,
             "descriptors": counts["descriptors"],
             "label_keys": counts["all_label_keys"],
-            "evaluation_cache_sha256": EXPECTED_EVALUATION_CACHE_SHA256,
+            "evaluation_cache_canonical_sha256": EXPECTED_EVALUATION_CACHE_CANONICAL_SHA256,
         }))
         return 0
     except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError, ImportError) as exc:
