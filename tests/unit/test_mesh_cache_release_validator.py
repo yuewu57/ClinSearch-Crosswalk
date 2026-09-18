@@ -113,3 +113,27 @@ def test_release_cache_validator_allows_empty_starter_for_development(tmp_path):
     assert report["release_ready"] is True
     assert report["errors"] == []
     assert "cache_is_empty" in report["warnings"]
+
+
+def test_release_cache_validator_accepts_extended_descriptor_id(tmp_path):
+    cache = tmp_path / "cache.json"
+    record = _valid_record()
+    record["descriptor_id"] = "D000069340"
+    record["descriptor_uri"] = "http://id.nlm.nih.gov/mesh/D000069340"
+    cache.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "mesh_year": 2026,
+                "generated_at_utc": "2026-09-18T12:00:00+00:00",
+                "source": "NLM MeSH RDF Lookup and SPARQL APIs",
+                "records": {"deprescriptions": record},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = MODULE.validate_cache(cache)
+
+    assert report["release_ready"] is True
+    assert report["errors"] == []
