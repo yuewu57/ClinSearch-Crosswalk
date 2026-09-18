@@ -43,7 +43,7 @@ const examples: Record<string, string> = {
   limit: '1 asthma.tw.\n2 cancer.tw.\n3 limit 1 to humans',
   date: '1 asthma.tw.\n2 2022*.dt.\n3 1 and 2',
   invalid: '1 cancer.ab./freq=x',
-  mesh: '1 exp Asthma/\n2 asthma*.ti,ab.\n3 1 or 2',
+  mesh: '1 telepsychiatry/\n2 telepsychiatr*.ti,ab.\n3 1 or 2',
 };
 function invalidate() {
   generation++;
@@ -147,7 +147,7 @@ el('convert').onclick = async () => {
     setBusy(true); status.textContent = 'Preparing the local engine… First use downloads the runtime.';
     manifest = await client.initialize(); if (ticket !== generation) return;
     el('provenance-text').textContent = JSON.stringify(manifest, null, 2);
-    if (!manifest.cacheRecords) el('preview-notice').textContent = 'Development preview · The bundled MeSH cache is empty. Headings use audited source-heading fallback; verified label updates and pharmacological-action expansion are unavailable for uncached terms. Local checks do not establish PubMed retrieval equivalence.';
+    el('preview-notice').textContent = manifest.cacheRecords ? `Development preview · Bundled MeSH ${manifest.meshYear ?? 'terminology'} cache: ${manifest.cacheRecords} verified exact records. Cache misses use audited source-heading fallback. Local checks do not establish PubMed retrieval equivalence.` : 'Development preview · The bundled MeSH cache is empty. Headings use audited source-heading fallback; verified label updates and pharmacological-action expansion are unavailable for uncached terms. Local checks do not establish PubMed retrieval equivalence.';
     status.textContent = 'Converting locally on this device…';
     const value = await client.convert(input); if (ticket === generation) render(value);
   } catch (error) {
