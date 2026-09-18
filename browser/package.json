@@ -1,0 +1,26 @@
+{
+  "name": "clinsearch-crosswalk-browser",
+  "private": true,
+  "version": "0.2.0-preview",
+  "type": "module",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "prepare:assets": "node scripts/prepare-assets.mjs",
+    "predev": "npm run prepare:assets",
+    "dev": "vite --host 127.0.0.1",
+    "build": "npm run prepare:assets && tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "npm run prepare:assets && node --test tests/*.test.mjs",
+    "test:parity": "python ../scripts/export_browser_parity.py --check && npm test",
+    "test:e2e": "playwright test",
+    "format": "prettier --write src tests scripts vite.config.ts tsconfig*.json package.json"
+  },
+  "dependencies": { "pyodide": "0.29.2" },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@playwright/test": "1.55.1",
+    "typescript": "5.8.3",
+    "vite": "8.3.0",
+    "prettier": "3.6.2"
+  }
+}

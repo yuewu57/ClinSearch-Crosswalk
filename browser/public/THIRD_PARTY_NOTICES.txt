@@ -1,0 +1,12 @@
+Browser runtime notices
+
+The converter retains the repository licence and NOTICE. The TypeScript interface runs the existing Python converter through Pyodide; it is not an independent rule-engine reimplementation.
+
+Pyodide 0.29.2: Mozilla Public License 2.0.
+https://github.com/pyodide/pyodide/tree/0.29.2
+https://www.mozilla.org/en-US/MPL/2.0/
+Pyodide includes CPython and other components under their respective licences.
+CPython: https://docs.python.org/3/license.html
+See the upstream source distribution for component-level notices.
+
+Testing-only MeSH identifiers are not included in production assets. Maintainer-supplied MeSH metadata retain their provenance and are not relicensed as software by this project.

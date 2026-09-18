@@ -39,12 +39,13 @@ def test_public_app_does_not_load_or_render_logos():
     assert "CITATION.cff" in app
 
 
-def test_public_site_has_neutral_title_with_credit_and_citation():
-    index = (ROOT / "site/index.html").read_text(encoding="utf-8")
-    assert "<h1>ClinSearch-CrossWalk: a Clinical Search Convertor</h1>" in index
-    assert '<p class="subtitle">Ovid MEDLINE → PubMed</p>' in index
-    assert "<img" not in index
-    assert "assets/brand/" not in index
-    assert "University of Strathclyde Glasgow" in index
-    assert "CITATION.cff" in index
-    assert "PolyForm Noncommercial" in index
+def test_public_browser_surface_uses_release_branding_without_legacy_logos():
+    app = (ROOT / "browser/src/main.ts").read_text(encoding="utf-8")
+    assert "ClinSearch-CrossWalk" in app
+    assert "Ovid MEDLINE" in app
+    assert "PubMed" in app
+    assert "<img" not in app
+    assert "assets/brand/" not in app
+    assert "ASSOCIATED PAPER" in app
+    assert "PolyForm Noncommercial" not in app
+    assert "Source licence" in app

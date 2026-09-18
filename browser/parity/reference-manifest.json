@@ -1,0 +1,19 @@
+{
+  "referenceCommit": "8ca2ca49984d13e466ae12332964f3131e49ee64",
+  "hashPolicy": "UTF-8 with LF newlines",
+  "sourceHashes": {
+    "src/ovid_pubmed_converter/__init__.py": "8a9bf72a93deedcd770f14248622d20aa5768265f3ff1c017712869d5bed1c54",
+    "src/ovid_pubmed_converter/audit.py": "c9f81a8a7e44159e0809aa1b98b7df2c782da3cdd97be2009c5e50da09eddf2b",
+    "src/ovid_pubmed_converter/core.py": "6f9cb3d4cd7d1f77ef06b416440d6c73975243ad4ac5d6440abc77259d7194be",
+    "src/ovid_pubmed_converter/engine.py": "004ba1b5001cff625ccc1e5d703adf56b2312d7510370327e2514c6070b84348",
+    "src/ovid_pubmed_converter/engine_v21.py": "16e40019a7d5cd8471ff26badae70e65142f0e5b658f7441ce0bb42b8e9d94f2",
+    "src/ovid_pubmed_converter/mesh.py": "a3899f823fc29f63e7702c9284e68025444e670530db2f9d6df2e5dbab368e48",
+    "src/ovid_pubmed_converter/mesh_cache.py": "3b1b58150a480fd7c63e2ccfaf67579ee2a781a6985b4cf3514298a3c1b201eb",
+    "src/ovid_pubmed_converter/models.py": "7fa5d146c4bf1e5bbdb9cb4fd5ea6de60278dc0847201c72793a8a0ab3a81cff",
+    "src/ovid_pubmed_converter/outputs.py": "256edc9c8457c0c5d88d2fdac0cffb24d03fa71c71b86640018f508f581922d7",
+    "src/ovid_pubmed_converter/parser.py": "02a44717d5611e6c987c94294d3aa23ec44c13170b22e0c271b9c32b0bb24dee",
+    "src/ovid_pubmed_converter/rtf.py": "6e61417d311497bc4bc17ba04d7038f77e4d0825c0d3f51679fdcc984715ec49",
+    "src/ovid_pubmed_converter/validation.py": "d6ad97ff16a2a2982f9c107da5899146bca2c593b80a2ce7235daefaf55a2bd7",
+    "src/ovid_pubmed_converter/web_service.py": "394919f604927f404402e603d3a9bf9f49978a593eeb374b722b19b725f2fc77"
+  }
+}

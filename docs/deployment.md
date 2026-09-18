@@ -1,159 +1,101 @@
-# Public launch: ClinSearch-CrossWalk
+# Public deployment — static browser release
 
-Prepared 11 September 2026. This is a release-preparation guide, not confirmation
-that a public repository, hosted app or monitoring service is already live.
+ClinSearch-CrossWalk's planned public interface is the static browser application under `browser/`. It runs the pinned Python reference converter locally through Pyodide/WebAssembly. No conversion backend, database, account system or API key is required.
 
-## 1. Approve and test the release
+This document is a release procedure, not evidence that a production site is already live.
 
-Review `docs/licensing.md`. Confirm rights-holder approval, contributor credits,
-third-party permissions and hosting terms before publishing. The source licence
-does not revoke prior Apache grants. A public Git repository exposes its history;
-therefore keep the existing development repository private and publish an
-approved clean snapshot in a separate repository.
+## 1. Release gates
 
-Run `python -m pip install -r requirements-dev.txt`, then `pytest` and
-`ruff check .`. Before the paper release, record/freeze the tested dependency
-versions, conversion ruleset, MeSH cache and benchmark inputs. No conversion
-engine changes are part of this release-preparation update.
+Before public production deployment:
 
-## 2. Create the public source repository from a clean snapshot
+1. use a populated, reviewed MeSH cache and run `scripts/validate_mesh_cache_release.py`;
+2. pass native Python tests and Ruff;
+3. pass browser unit/parity/build/end-to-end CI;
+4. run representative real-corpus acceptance checks against the authoritative Python output using the same frozen cache;
+5. record the exact source commit, software/ruleset versions and cache SHA-256;
+6. confirm licensing, contributor attribution and third-party notices;
+7. remove development/noindex notices only after the preceding gates pass.
 
-Proposed public repository: `yuewu57/ClinSearch-CrossWalk`. The new UI and citation links
-use that destination; it is not automatically created by this change. Choose
-another name only after updating those links consistently.
+The private development corpus is not part of the public source release.
 
-From the existing Windows PowerShell clone, fetch and export the review branch:
+## 2. Build
 
-```powershell
-git fetch origin
-if ($LASTEXITCODE -ne 0) { throw "git fetch failed" }
-$ref = "origin/release/public-platform-v1-YW-11092026"
-$archive = Join-Path (Split-Path (Get-Location) -Parent) "ClinSearch_CrossWalk_source_v1_YW_11092026.zip"
-$dest = Join-Path (Split-Path (Get-Location) -Parent) "ClinSearch-CrossWalk"
-if (Test-Path $archive) { throw "Archive already exists; choose a new versioned filename" }
-if (Test-Path $dest) { throw "Destination already exists; do not overwrite it" }
-git archive --format=zip --output=$archive $ref
-if ($LASTEXITCODE -ne 0) { throw "git archive failed" }
-Expand-Archive -LiteralPath $archive -DestinationPath $dest
-Set-Location $dest
+From the repository root:
+
+```bash
+python -m pip install -r requirements-dev.txt
+cd browser
+npm ci
+npm test
+npm run build
 ```
 
-The archive contains tracked files, not `.git` history. Review all files before
-uploading: this does NOT remove sensitive files still tracked in the selected
-version. Review examples/data and third-party notices. Brand image files in
-`assets/brand/` may be omitted from the public snapshot; the new UI and tests do
-not need them. Keep the normative v20 base and approved v21 delta documentation.
-Do not delete historic notices applicable to any third-party materials.
+The deployable output is:
 
-Create an EMPTY GitHub repository named `ClinSearch-CrossWalk` under `yuewu57`, initially
-private for the final review. Do not auto-create a README or choose another licence.
-Then, in the new local directory:
-
-```powershell
-git init -b main
-if ($LASTEXITCODE -ne 0) { throw "git init failed" }
-git add .
-git commit -m "Prepare ClinSearch-CrossWalk public research release"
-if ($LASTEXITCODE -ne 0) { throw "git commit failed" }
-git remote add origin https://github.com/yuewu57/ClinSearch-Crosswalk.git
-git push -u origin main
-if ($LASTEXITCODE -ne 0) { throw "git push failed" }
+```text
+browser/dist/
 ```
 
-After approval, use the NEW repository's Settings → General → Danger Zone →
-Change repository visibility → Public. Do not expose the development repository
-or its old Git history as part of this step. A clean initial commit does not cancel
-any rights already granted to recipients of an older Apache-licensed version.
+Preview it over HTTP(S), not by opening `index.html` directly:
 
-## 3. Deploy the converter for free
+```bash
+node scripts/serve-preview.mjs
+```
 
-Sign in at https://share.streamlit.io using GitHub. Review and accept the hosting
-terms yourself, particularly section 6.2 of https://streamlit.io/terms-of-use.
-The provider receives a separate content licence; a project non-commercial
-notice does not override it. This decision is important for commercial-use control.
+Then open `http://127.0.0.1:4173`.
 
-Choose Create app → Yup, I have an app, then:
+## 3. Static-host requirements
 
-| Setting | Value |
-| --- | --- |
-| Repository | yuewu57/ClinSearch-CrossWalk |
-| Branch | main |
-| Main file path | web/app.py |
-| Advanced settings → Python version | 3.12 |
-| App URL | Request clinsearch-crosswalk, subject to availability |
+Any static host used for production must:
 
-Deploy. No API key is needed for the existing default MeSH lookup. Do not put
-passwords or API keys in source code. Open the resulting REAL app URL in a
-signed-out browser. Verify Sharing → This app is public and searchable.
+- publish `browser/dist/` without rewriting application assets incorrectly;
+- serve JavaScript, WebAssembly and Python/runtime assets with appropriate MIME types;
+- preserve the security headers emitted by the build where the platform supports custom headers;
+- support HTTPS;
+- not inject scripts that violate the release Content Security Policy unless that change is explicitly reviewed;
+- not require strategy content to be sent to a conversion server.
 
-Test a small pasted strategy, an RTF fixture, an invalid input, warnings and
-all downloads. Check server logs for errors. The two large logos should not
-appear; author/affiliation/citation information remains in About.
+Cloudflare Pages, GitHub Pages or another static host can satisfy the architecture if configured accordingly. Hosting-provider terms and logging practices must be reviewed separately.
 
-The proposed address `https://clinsearch-crosswalk.streamlit.app` is not reserved by
-this guide. Use the address actually issued to you.
+For the current Cloudflare-oriented build settings and security checks, see [browser_deployment_v1_YW_18092026.md](browser_deployment_v1_YW_18092026.md).
 
-## 4. Configure the optional project page
+## 4. Production acceptance
 
-In the NEW public GitHub repository, select Settings → Secrets and variables →
-Actions → Variables → New repository variable. These settings are not secrets:
+On the real HTTPS URL test, at minimum:
 
-| Variable | Value |
-| --- | --- |
-| APP_URL | Actual deployed HTTPS .streamlit.app URL |
-| PUBLIC_RELEASE_APPROVED | true, only after the release checks |
-| MONITORING_ENABLED | false initially |
-| MONITORING_POLICY_CONFIRMED | false initially |
+- a simple free-text strategy;
+- ordinary MeSH;
+- pharmacological-action behaviour using the frozen cache;
+- adjacency;
+- wildcard phrase handling;
+- inline `.ti,ab.`;
+- LIMIT;
+- database-update rows;
+- a long Boolean dependency chain;
+- RTF upload;
+- an intentionally invalid strategy;
+- mobile layout and light/dark/system themes.
 
-Choose Settings → Pages → Build and deployment → Source → GitHub Actions.
-Then Actions → Publish project page → Run workflow → main. The workflow builds
-only `site/`, injects APP_URL and reads the software/ruleset versions from source.
-It does not publish the repository root or the brand images. No launch URL is
-invented when APP_URL is unset; the launch button stays disabled.
+Compare conversion output with the authoritative Python reference for the same cases and cache. Do not substitute a visual smoke test for semantic parity.
 
-The expected project URL, after successful publication, is
-https://yuewu57.github.io/ClinSearch-CrossWalk/ . Verify the actual deployment URL.
-This page links to the separately hosted Python app; GitHub Pages itself cannot
-run the Python converter.
+## 5. Freeze and archive
 
-## 5. Optional eight-hour availability check
+For the release used in the paper, archive together:
 
-Only activate this after confirming the provider permits your automated checks.
-No permission or guaranteed keep-awake effect is established by this guide.
-Set `MONITORING_POLICY_CONFIRMED=true`, then `MONITORING_ENABLED=true`.
-Both must be the lowercase string `true`; APP_URL must also be set.
+- Git commit;
+- software tag/version;
+- ruleset version;
+- terminology-cache filename and SHA-256;
+- MeSH year and cache generation timestamp/source;
+- CI/regression result;
+- real-corpus acceptance record;
+- public application URL;
+- repository URL;
+- release date;
+- immutable archive/DOI when created.
 
-In Actions → App availability → Run workflow, run once manually from main.
-Success means the real title, strategy input and enabled Convert button appeared,
-not merely an HTTP 200 response. No strategy is submitted. The checker does NOT
-click a wake-up prompt, bypass authentication or challenge pages, or guarantee
-that Streamlit resets its inactivity timer. Sleeping/unavailable apps fail the
-check so you can open the app manually and investigate.
+Do not add a DOI or paper URL before it exists.
 
-The configured schedule is 00:17, 08:17 and 16:17 UTC (01:17, 09:17 and 17:17
-in the UK while British Summer Time applies). GitHub schedules are best-effort;
-runs can be delayed or dropped, and public-repository schedules are disabled
-after 60 days without repository activity. To stop checks, set
-MONITORING_ENABLED=false or disable the App availability workflow.
+## 6. Post-release changes
 
-Configure your GitHub account's Actions email notifications and verify that a
-manual failed test reaches the intended recipient; this change does not configure
-notification preferences or promise email delivery. Standard runners are free for
-public repositories; private repositories have plan-dependent allowances.
-
-## 6. Paper release
-
-Replace provisional collective authorship with the approved contributor/author
-metadata. Create a tested release tag and add the true date and archive DOI to
-CITATION.cff. Archive the exact paper version with Zenodo and cite that version,
-not just the evolving main branch. Do not invent a paper DOI before one exists.
-
-## Official documentation checked
-
-- Deployment: https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy
-- Sharing: https://docs.streamlit.io/deploy/streamlit-community-cloud/share-your-app
-- Hibernation/resources: https://docs.streamlit.io/deploy/streamlit-community-cloud/manage-your-app
-- Hosting terms: https://streamlit.io/terms-of-use
-- GitHub schedules: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows
-- Pages workflow: https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages
-- Software archiving: https://docs.github.com/en/repositories/archiving-a-github-repository/referencing-and-citing-content
+Conversion-rule changes require a new ruleset/versioned release and regression review. UI-only changes must still pass browser tests. A terminology-cache replacement must be treated as a release artefact change: validate it, record its new hash and rerun the representative acceptance set before production promotion.

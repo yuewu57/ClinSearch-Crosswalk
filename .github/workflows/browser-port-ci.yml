@@ -1,0 +1,86 @@
+name: Browser release quality
+
+on:
+  push:
+    branches: [main, feature/browser-typescript-v1]
+  pull_request:
+    paths:
+      - 'browser/**'
+      - 'scripts/export_browser_parity.py'
+      - 'scripts/validate_mesh_cache_release.py'
+      - 'src/**'
+      - 'resources/**'
+      - 'tests/**'
+      - 'docs/cochrane_ovid_pubmed_conversion_rules*.md'
+      - '.github/workflows/browser-port-ci.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pytest -q --junitxml=python-reference-results.xml
+      - run: ruff check .
+      - run: python scripts/export_browser_parity.py --check
+      - name: Validate development starter-cache structure
+        run: python scripts/validate_mesh_cache_release.py resources/mesh_resolution_cache_v20_v1.json --allow-empty
+      - name: Validate populated release-candidate MeSH cache
+        run: python scripts/validate_mesh_cache_release.py resources/mesh_resolution_cache_v20_v1_YW_18092026.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-reference-results
+          path: python-reference-results.xml
+          retention-days: 7
+
+  browser:
+    runs-on: ubuntu-latest
+    needs: python-reference
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: browser/package-lock.json
+      - run: python -m pip install -r requirements-dev.txt
+      - run: npm ci --ignore-scripts
+        working-directory: browser
+      - run: npm audit --audit-level=high
+        working-directory: browser
+      - run: npm test
+        working-directory: browser
+      - run: npm run build
+        working-directory: browser
+      - run: npx playwright install --with-deps chromium
+        working-directory: browser
+      - run: npm run test:e2e
+        working-directory: browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-preview-and-tests
+          path: |
+            browser/dist
+            browser/test-results
+          retention-days: 7

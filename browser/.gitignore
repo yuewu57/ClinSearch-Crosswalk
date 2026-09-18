@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.test-build/
+public/runtime/
+public/LICENSE.txt
+public/NOTICE.txt
+parity/generated.json
+test-results/
+playwright-report/
+*.tar.gz
+npm-audit.json
