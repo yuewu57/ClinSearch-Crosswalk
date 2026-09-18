@@ -1,0 +1,163 @@
+name: Verify frozen MeSH snapshot candidate
+
+on:
+  push:
+    branches: [feature/mesh-2026-exact-snapshot]
+    paths: ['.github/workflows/mesh-snapshot-candidate.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mesh-snapshot-candidate
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.repository == 'yuewu57/ClinSearch-Crosswalk' && github.ref == 'refs/heads/feature/mesh-2026-exact-snapshot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/mesh-2026-exact-snapshot
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: browser/package-lock.json
+      - name: Apply reviewed implementation once
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, pathlib, subprocess
+          parts = sorted(pathlib.Path('snapshot-bootstrap').glob('part*_v1_YW_18092026.patchpart'))
+          if parts:
+              assert len(parts) == 4
+              content = b''.join(p.read_bytes() for p in parts)
+              assert hashlib.sha256(content).hexdigest() == '59741a556fb6d6a70345d7e47732da41f1e604e8abbe9ccefd8fa630c8bb23aa', 'Patch transfer hash mismatch'
+              subprocess.run(['git', 'apply', '--unidiff-zero', '--check', '-'], input=content, check=True)
+              subprocess.run(['git', 'apply', '--unidiff-zero', '-'], input=content, check=True)
+          else:
+              assert pathlib.Path('scripts/build_mesh_2026_snapshot_v1_YW_18092026.py').exists()
+          PY
+      - name: Install development dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Normalise new Python imports only
+        run: |
+          ruff check --fix scripts/build_mesh_2026_snapshot_v1_YW_18092026.py scripts/export_mesh_snapshot_acceptance_v1_YW_18092026.py tests/unit/test_mesh_snapshot_v1_YW_18092026.py browser/python/browser_bridge.py browser/python/mesh_snapshot_v1_YW_18092026.py
+          ruff check .
+      - name: Fetch hash-locked official source bytes
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/mesh2026-inputs"
+          python - <<'PY'
+          import hashlib, json, os, time
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+          lock = json.loads(Path('resources/mesh2026_source_lock_v1_YW_18092026.json').read_text())
+          root = Path(os.environ['RUNNER_TEMP']) / 'mesh2026-inputs'
+          for item in lock['sources']:
+              assert item['url'].startswith('https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/')
+              path = root / item['file']
+              for attempt in range(4):
+                  try:
+                      with urlopen(Request(item['url'], headers={'User-Agent': 'ClinSearch-CrossWalk frozen MeSH builder'}), timeout=120) as response, path.open('wb') as target:
+                          while block := response.read(1048576):
+                              target.write(block)
+                      break
+                  except Exception:
+                      if attempt == 3:
+                          raise
+                      time.sleep(2 ** attempt)
+              assert path.stat().st_size == item['bytes'], 'Source size changed'
+              assert hashlib.sha256(path.read_bytes()).hexdigest() == item['sha256'], 'Source hash changed'
+              print(item['file'], item['sha256'])
+          PY
+      - name: Build frozen resources
+        shell: bash
+        run: |
+          mkdir -p verification
+          python scripts/build_mesh_2026_snapshot_v1_YW_18092026.py --source-dir "$RUNNER_TEMP/mesh2026-inputs" --source-lock resources/mesh2026_source_lock_v1_YW_18092026.json --output-dir resources/mesh2026 | tee verification/build_v1_YW_18092026.log
+      - name: Check all exact labels and all preserved cache entries
+        shell: bash
+        run: |
+          PYTHONPATH=src:browser/python python - <<'PY' | tee verification/exhaustive_v1_YW_18092026.log
+          import hashlib, json
+          from pathlib import Path
+          from mesh_snapshot_v1_YW_18092026 import validate_snapshot, lookup_descriptor
+          snapshot = json.loads(Path('resources/mesh2026/mesh2026_descriptor_exact_v1_YW_18092026.json').read_text())
+          validate_snapshot(snapshot)
+          assert len(snapshot['records']) == 31110
+          assert len(snapshot['terms']) == 267012
+          for label, ids in snapshot['terms'].items():
+              expected = [snapshot['historical_aliases'][label][0]] if label in snapshot['historical_aliases'] else snapshot['preferred'].get(label, ids)
+              result = lookup_descriptor(snapshot, label)
+              assert result['descriptor_id'] == expected[0] if len(expected) == 1 else result['status'] == 'ambiguous'
+          old_path = Path('resources/mesh_resolution_cache_v20_v1_YW_18092026.json')
+          assert hashlib.sha256(old_path.read_bytes()).hexdigest() == 'a975dee7b863d6bd74199ded85ffe9f36cb44963e3f897fe5c9c8a3e923e91f1'
+          old = json.loads(old_path.read_text())
+          for key, record in old['records'].items():
+              result = lookup_descriptor(snapshot, key)
+              for field in ('descriptor_id', 'canonical_label', 'record_class', 'is_pharmacological_action', 'match_type'):
+                  assert result[field] == record[field], (key, field)
+          print('267012 exact-label lookups passed; all five compared fields preserved for 620 cache entries; original file byte hash unchanged.')
+          PY
+          python scripts/export_browser_parity.py --check
+          git diff --exit-code 688746c63c73f17dc9b14160084904a75bc81afd -- src/ resources/mesh_resolution_cache_v20_v1_YW_18092026.json
+      - name: Python regression and conformance
+        run: python -m pytest -q --junitxml=verification/python_v1_YW_18092026.xml
+      - name: Browser dependencies and audit
+        working-directory: browser
+        run: |
+          npm ci --ignore-scripts
+          npm audit --audit-level=high
+      - name: Native and WebAssembly parity
+        working-directory: browser
+        run: npm test | tee ../verification/wasm_v1_YW_18092026.log
+      - name: Production build
+        working-directory: browser
+        run: npm run build
+      - name: Install Chromium
+        working-directory: browser
+        run: npx playwright install --with-deps chromium
+      - name: Real-browser acceptance
+        working-directory: browser
+        run: npm run test:e2e | tee ../verification/chromium_v1_YW_18092026.log
+      - name: Retain built candidate and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mesh-2026-browser-candidate
+          path: |
+            resources/mesh2026/
+            resources/mesh2026_source_lock_v1_YW_18092026.json
+            browser/dist/
+            browser/test-results/
+            verification/
+            scripts/build_mesh_2026_snapshot_v1_YW_18092026.py
+            scripts/export_mesh_snapshot_acceptance_v1_YW_18092026.py
+            browser/python/
+            tests/unit/test_mesh_snapshot_v1_YW_18092026.py
+            docs/mesh2026_snapshot_v1_YW_18092026.md
+          compression-level: 0
+          retention-days: 30
+      - name: Freeze tested candidate on feature branch only
+        shell: bash
+        run: |
+          test "$GITHUB_REF" = 'refs/heads/feature/mesh-2026-exact-snapshot'
+          git diff --exit-code 688746c63c73f17dc9b14160084904a75bc81afd -- src/ resources/mesh_resolution_cache_v20_v1_YW_18092026.json
+          if test -d snapshot-bootstrap; then git rm -r snapshot-bootstrap; fi
+          git add -- .gitattributes README.md browser resources/mesh2026 resources/mesh2026_source_lock_v1_YW_18092026.json scripts/build_mesh_2026_snapshot_v1_YW_18092026.py scripts/export_mesh_snapshot_acceptance_v1_YW_18092026.py tests/unit/test_mesh_snapshot_v1_YW_18092026.py docs/mesh2026_snapshot_v1_YW_18092026.md
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if ! git diff --cached --quiet; then
+            git commit -m 'feat(mesh): freeze tested full MeSH 2026 browser snapshot'
+            git push origin HEAD:refs/heads/feature/mesh-2026-exact-snapshot
+          fi
+          git rev-parse HEAD
