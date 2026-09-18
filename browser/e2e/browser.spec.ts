@@ -46,9 +46,13 @@ test('unsafe update-date OR is blocked; literal phrase OR survives',async({page}
   await convert(page,'1 "law or polic*".tw.');
   await expect(page.locator('#query')).toHaveValue('"law or polic*"[tw]');
 });
-test('populated cache provenance and unresolved-heading fallback are both visible',async({page})=>{
-  await page.goto('/');await convert(page,'1 telepsychiatry/');
-  await expect(page.locator('#preview-notice')).toContainText('620 verified exact records');
+test('full MeSH snapshot resolves uncached evaluation terms and preserves fallback',async({page})=>{
+  await page.goto('/');await convert(page,'1 occupational therapist/');
+  await expect(page.locator('#preview-notice')).toContainText('31,110 descriptors');
+  await expect(page.locator('#preview-notice')).toContainText('267,012 exact preferred/entry-term labels');
+  await expect(page.locator('#query')).toHaveValue('"Occupational Therapists"[mh]');
+  await expect(page.locator('#warning-list')).not.toContainText('not verified');
+  await convert(page,'1 Crosswalk Unmapped Heading 991/');
   await expect(page.locator('#warning-list')).toContainText('not verified');
   await expect(page.locator('#query-note')).toContainText('not submitted to PubMed');
 });
