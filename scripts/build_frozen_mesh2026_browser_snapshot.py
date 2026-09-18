@@ -133,8 +133,9 @@ def build(repo: Path, source_dir: Path) -> bytes:
     import sys
     sys.path.insert(0, str(repo / "src"))
     sys.path.insert(0, str(repo / "browser/python"))
-    from ovid_pubmed_converter import engine
     from mesh_snapshot_resolver_v1_YW_18092026 import CLASSES, KIND, UID, validate_snapshot
+
+    from ovid_pubmed_converter import engine
 
     engine_bytes = (
         (repo / "src/ovid_pubmed_converter/engine.py")
