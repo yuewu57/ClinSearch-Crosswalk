@@ -1,0 +1,351 @@
++        'unknown_boolean_heading': '1 Anal Canal and Neoplasms/',
++        'publication_type': '1 Review/',
++        'check_tag': '1 Male/',
++        'geographical': '1 Scotland/',
++        'pa_exploded': '1 exp Anti-Bacterial Agents/',
++        'pa_ordinary': '1 Anti-Bacterial Agents/',
++        'compound_not_pa_target': '1 exp Calcimycin/',
++        'frequency': '1 cancer.ab./freq=2',
++        'wildcard_phrase': '1 "breast* cancer*"[Title/Abstract]',
++        'limit': '1 exp Narcolepsy/\n2 limit 1 to humans',
++        'update_date': '1 exp Narcolepsy/\n2 2022*.dt.\n3 1 and 2',
++        'multifield': '1 narcolep*.ti,ab.\n2 Narcolepsy/\n3 1 or 2',
++        'invalid': '1 Narcolepsy/\n2 1 and 999',
++    }
++    cases = []
++    for identifier, source in sources.items():
++        result = convert_strategy(parse_strategy_text(source), mesh_resolver=resolver)
++        expected = {'result': asdict(result), 'strategyText': strategy_text(result),
++                    'oneLineQuery': one_line_query(result), 'auditCsv': audit_csv(result),
++                    'convertedRtf': converted_rtf(result).decode('ascii'),
++                    'inputWarnings': [], 'adapterError': None}
++        cases.append({'id': identifier, 'request': {'mode': 'paste', 'source': source},
++                      'expected': expected})
++    (ROOT / 'browser/parity/snapshot-generated.json').write_text(json.dumps(cases) + '\n', encoding='utf-8')
++    print(f'Exported {len(cases)} independently rendered native snapshot cases')
++
++
++if __name__ == '__main__':
++    main()
+--- /dev/null
++++ b/tests/unit/test_mesh_snapshot_v1_YW_18092026.py
+@@ -0,0 +1,131 @@
++"""Terminology adapter tests; conversion engine and old fixtures stay unchanged."""
++import importlib.util
++import json
++import sys
++from pathlib import Path
++
++import pytest
++
++ROOT = Path(__file__).parents[2]
++sys.path.insert(0, str(ROOT / 'browser/python'))
++from mesh_snapshot_v1_YW_18092026 import (  # noqa: E402
++    SnapshotResolver,
++    lookup_descriptor,
++    validate_snapshot,
++)
++from ovid_pubmed_converter.core import convert_strategy  # noqa: E402
++from ovid_pubmed_converter.engine import MeshResolver  # noqa: E402
++from ovid_pubmed_converter.outputs import one_line_query  # noqa: E402
++from ovid_pubmed_converter.parser import parse_strategy_text  # noqa: E402
++
++
++def small_snapshot():
++    return {'schema_version': 2, 'kind': 'mesh-descriptor-exact', 'mesh_year': 2026,
++            'records': {'D000001': ['Action Agents', 'TopicalDescriptor', True],
++                        'D000002': ['Example Review', 'PublicationType', False],
++                        'D000003': ['Active Compound', 'TopicalDescriptor', False]},
++            'preferred': {'action agents': ['D000001'], 'example review': ['D000002'],
++                          'active compound': ['D000003']},
++            'terms': {'action agents': ['D000001', 'D000003'], 'specific agent': ['D000001'],
++                      'ambiguous label': ['D000001', 'D000003']},
++            'historical_aliases': {'old agents': ['D000001', 'Action Agents']}}
++
++
++def convert(source, resolver):
++    return convert_strategy(parse_strategy_text(source), mesh_resolver=resolver)
++
++
++def test_exact_preferred_has_priority_over_entry_collision():
++    snapshot = small_snapshot()
++    validate_snapshot(snapshot)
++    value = lookup_descriptor(snapshot, '  ACTION   agents  ')
++    assert value['descriptor_id'] == 'D000001'
++    assert value['match_type'] == 'preferred'
++
++
++def test_ambiguous_term_is_never_guessed():
++    value = lookup_descriptor(small_snapshot(), 'ambiguous label')
++    assert value['status'] == 'ambiguous'
++    assert len(value['candidate_uris']) == 2
++    result = convert('1 ambiguous label/', SnapshotResolver(small_snapshot()))
++    assert any('mesh_resolution_fallback' in flag for flag in result.rows[0].audit_flags)
++
++
++def test_typo_is_not_fuzzily_repaired():
++    value = lookup_descriptor(small_snapshot(), 'Acti ve Compound')
++    assert value['status'] == 'unresolved'
++
++
++def test_exact_entry_and_existing_alias_remain_distinct():
++    assert lookup_descriptor(small_snapshot(), 'specific agent')['match_type'] == 'entry'
++    assert lookup_descriptor(small_snapshot(), 'old agents')['match_type'] == 'historical'
++
++
++def test_publication_type_and_pa_direction():
++    resolver = SnapshotResolver(small_snapshot())
++    assert one_line_query(convert('1 Example Review/', resolver)) == '"Example Review"[pt]'
++    assert '[pa]' in one_line_query(convert('1 exp Action Agents/', resolver))
++    assert '[pa]' not in one_line_query(convert('1 Action Agents/', resolver))
++    assert '[pa]' not in one_line_query(convert('1 exp Active Compound/', resolver))
++
++
++def test_snapshot_matches_reference_for_identical_metadata():
++    snapshot = small_snapshot()
++    old = MeshResolver(cache_path=None, mode='cache-only')
++    old.records = {k: lookup_descriptor(snapshot, k) for k in snapshot['preferred']}
++    old.mesh_year = 2026
++    source = '1 exp Action Agents/\n2 Example Review/\n3 1 or 2'
++    assert convert(source, SnapshotResolver(snapshot)) == convert(source, old)
++
++
++def test_snapshot_prefetch_does_not_mutate_or_contact_network(monkeypatch):
++    snapshot = small_snapshot()
++    before = json.dumps(snapshot, sort_keys=True)
++    resolver = SnapshotResolver(snapshot)
++    monkeypatch.setattr(resolver, '_request_json', lambda *a, **k: pytest.fail('Network call'))
++    resolver.prefetch(['Action Agents', 'Not Present'])
++    convert('1 exp Action Agents/', resolver)
++    assert json.dumps(snapshot, sort_keys=True) == before
++    assert resolver.dirty is False and resolver.cache_path is None
++
++
++@pytest.mark.parametrize('fault', ['missing_record', 'unknown_class', 'non_boolean_pa',
++                                  'nonunique_candidates', 'scr', 'alias_target'])
++def test_invalid_snapshot_is_rejected(fault):
++    snapshot = small_snapshot()
++    if fault == 'missing_record':
++        snapshot['terms']['bad'] = ['D999999']
++    elif fault == 'unknown_class':
++        snapshot['records']['D000001'][1] = 'SupplementaryConcept'
++    elif fault == 'non_boolean_pa':
++        snapshot['records']['D000001'][2] = 'false'
++    elif fault == 'nonunique_candidates':
++        snapshot['terms']['bad'] = ['D000001', 'D000001']
++    elif fault == 'scr':
++        snapshot['kind'] = 'mesh-supplementary-exact'
++    else:
++        snapshot['historical_aliases']['old agents'] = ['D000003', 'Action Agents']
++    with pytest.raises(ValueError):
++        validate_snapshot(snapshot)
++
++
++def test_original_620_cache_is_byte_preserved():
++    import hashlib
++    path = ROOT / 'resources/mesh_resolution_cache_v20_v1_YW_18092026.json'
++    assert hashlib.sha256(path.read_bytes()).hexdigest() == 'a975dee7b863d6bd74199ded85ffe9f36cb44963e3f897fe5c9c8a3e923e91f1'
++
++
++def test_xml_direct_pa_and_term_collection(tmp_path):
++    spec = importlib.util.spec_from_file_location('builder', ROOT / 'scripts/build_mesh_2026_snapshot_v1_YW_18092026.py')
++    module = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(module)
++    source = tmp_path / 'desc.xml'
++    source.write_text('''<DescriptorRecordSet LanguageCode="eng"><DescriptorRecord DescriptorClass="1">
++    <DescriptorUI>D000003</DescriptorUI><DescriptorName><String>Active Compound</String></DescriptorName>
++    <PharmacologicalActionList><PharmacologicalAction><DescriptorReferredTo><DescriptorUI>D000001</DescriptorUI></DescriptorReferredTo></PharmacologicalAction></PharmacologicalActionList>
++    <ConceptList><Concept><TermList><Term><String>Shared</String></Term><Term><String>Shared</String></Term></TermList></Concept></ConceptList>
++    </DescriptorRecord></DescriptorRecordSet>''', encoding='utf-8')
++    data = module.collect(source, 'descriptor')
++    assert data['terms']['shared'] == ['D000003']
++    assert set(data['actions']) == {'D000001'}
++    assert data['records']['D000003'][2] is False
+--- /dev/null
++++ b/browser/python/mesh_snapshot_v1_YW_18092026.py
+@@ -0,0 +1,94 @@
++"""Exact descriptor lookup over a frozen compact MeSH snapshot; no network I/O.
++
++The reference conversion engine is unchanged. SCRs/qualifiers remain separate
++resources and are never guessed to be slash-heading descriptors.
++"""
++from __future__ import annotations
++
++import re
++
++from ovid_pubmed_converter.engine import MeshResolver, _mesh_cache_key, normalize_mesh_lookup_label
++
++CLASSES = {"TopicalDescriptor", "PublicationType", "CheckTag", "GeographicalDescriptor"}
++
++
++def validate_snapshot(snapshot: dict) -> None:
++    if not isinstance(snapshot, dict) or snapshot.get("schema_version") != 2:
++        raise ValueError("browser_snapshot_schema_invalid")
++    if snapshot.get("kind") != "mesh-descriptor-exact" or snapshot.get("mesh_year") != 2026:
++        raise ValueError("browser_snapshot_kind_or_year_invalid")
++    records = snapshot.get("records")
++    if not isinstance(records, dict) or not records:
++        raise ValueError("browser_snapshot_records_invalid")
++    for ui, value in records.items():
++        if (not re.fullmatch(r"D[0-9]+", ui) or not isinstance(value, list) or len(value) != 3
++                or not isinstance(value[0], str) or not value[0] or value[1] not in CLASSES
++                or not isinstance(value[2], bool)):
++            raise ValueError("browser_snapshot_descriptor_invalid")
++    for category in ("preferred", "terms"):
++        index = snapshot.get(category)
++        if not isinstance(index, dict):
++            raise ValueError("browser_snapshot_index_invalid")
++        for key, ids in index.items():
++            if (not isinstance(key, str) or key != _mesh_cache_key(key)
++                    or not isinstance(ids, list) or not ids or ids != sorted(set(ids))
++                    or any(ui not in records for ui in ids)):
++                raise ValueError("browser_snapshot_index_reference_invalid")
++    for ui, value in records.items():
++        if ui not in snapshot["preferred"].get(_mesh_cache_key(value[0]), []):
++            raise ValueError("browser_snapshot_preferred_label_missing")
++    aliases = snapshot.get("historical_aliases", {})
++    if not isinstance(aliases, dict):
++        raise ValueError("browser_snapshot_aliases_invalid")
++    for key, value in aliases.items():
++        if (key != _mesh_cache_key(key) or not isinstance(value, list) or len(value) != 2
++                or value[0] not in records or not isinstance(value[1], str)):
++            raise ValueError("browser_snapshot_alias_invalid")
++        target = _mesh_cache_key(value[1])
++        ids = snapshot["preferred"].get(target) or snapshot["terms"].get(target) or []
++        if ids != [value[0]]:
++            raise ValueError("browser_snapshot_alias_target_invalid")
++
++
++def lookup_descriptor(snapshot: dict, source_label: str) -> dict:
++    """Pure lookup: reviewed aliases > exact preferred labels > exact entry terms."""
++    label = normalize_mesh_lookup_label(source_label)
++    key = _mesh_cache_key(label)
++    alias = snapshot.get("historical_aliases", {}).get(key)
++    if alias:
++        ids, match_type, matched = [alias[0]], "historical", alias[1]
++    elif key in snapshot["preferred"]:
++        ids, match_type, matched = snapshot["preferred"][key], "preferred", label
++    else:
++        ids, match_type, matched = snapshot["terms"].get(key, []), "entry", label
++    if len(ids) != 1:
++        return {"status": "ambiguous" if ids else "unresolved", "source_label": label,
++                "reason": ("multiple_exact_descriptor_matches" if match_type == "preferred"
++                           else "entry_term_maps_to_multiple_descriptors") if ids
++                          else "no_exact_preferred_or_entry_match_in_frozen_snapshot",
++                "candidate_uris": ["http://id.nlm.nih.gov/mesh/" + ui for ui in ids]}
++    ui = ids[0]
++    canonical, record_class, is_pa = snapshot["records"][ui]
++    return {"status": "resolved", "source_label": label, "matched_label": matched,
++            "match_type": match_type, "canonical_label": canonical, "descriptor_id": ui,
++            "descriptor_uri": "http://id.nlm.nih.gov/mesh/" + ui,
++            "record_class": record_class, "is_pharmacological_action": is_pa,
++            "mesh_year": snapshot["mesh_year"]}
++
++
++class SnapshotResolver(MeshResolver):
++    """An immutable terminology adapter for the existing conversion API."""
++
++    def __init__(self, snapshot: dict, *, validated: bool = False):
++        super().__init__(cache_path=None, mode="cache-only")
++        if not validated:
++            validate_snapshot(snapshot)
++        self.snapshot = snapshot
++        self.mesh_year = snapshot["mesh_year"]
++
++    def resolve(self, source_label: str) -> dict:
++        return lookup_descriptor(self.snapshot, source_label)
++
++    def prefetch(self, source_labels, max_workers: int = 4) -> dict[str, dict]:
++        # This never performs I/O or adds session-specific labels to the snapshot.
++        return {_mesh_cache_key(label): self.resolve(label) for label in source_labels}
+--- a/browser/python/browser_bridge.py
++++ b/browser/python/browser_bridge.py
+@@ -8,0 +9,3 @@
++from functools import lru_cache
++
++from mesh_snapshot_v1_YW_18092026 import SnapshotResolver, validate_snapshot
+@@ -94,7 +97,6 @@
+-    if not isinstance(cache, dict) or cache.get('schema_version') != 1:
+-        raise ValueError('browser_cache_schema_invalid')
+-    if not isinstance(cache.get('records'), dict):
+-        raise TypeError('browser_cache_records_invalid')
+-    resolver = MeshResolver(cache_path=None, mode='cache-only')
+-    resolver.records = dict(cache['records'])
+-    resolver.mesh_year = cache.get('mesh_year')
++    if cache.get('schema_version') == 2:
++        resolver = SnapshotResolver(cache, validated=True)
++    else:
++        resolver = MeshResolver(cache_path=None, mode='cache-only')
++        resolver.records = dict(cache['records'])
++        resolver.mesh_year = cache.get('mesh_year')
+@@ -121,0 +124,13 @@
++@lru_cache(maxsize=1)
++def _read_terminology(cache_json):
++    # Only immutable public terminology is retained, never source strategies/results.
++    cache = json.loads(cache_json)
++    if not isinstance(cache, dict):
++        raise ValueError('browser_cache_schema_invalid')
++    if cache.get('schema_version') == 2:
++        validate_snapshot(cache)
++    elif cache.get('schema_version') != 1 or not isinstance(cache.get('records'), dict):
++        raise ValueError('browser_cache_schema_invalid')
++    return cache
++
++
+@@ -125 +140 @@
+-        value = _run(json.loads(request_json), json.loads(cache_json))
++        value = _run(json.loads(request_json), _read_terminology(cache_json))
+--- a/browser/src/core/types.ts
++++ b/browser/src/core/types.ts
+@@ -24 +24 @@
+-  bridgeSha256: string; cacheSha256: string; cacheRecords: number;
++  bridgeSha256: string; snapshotAdapterSha256: string; cacheSha256: string; cacheRecords: number;
+@@ -25,0 +26,3 @@
++  terminologyProfile?: string; cacheCompression?: 'gzip' | 'none';
++  cacheFile?: string; cacheGzipSha256?: string; cacheExactLabels?: number;
++  snapshotId?: string | null; terminologyFrozenAt?: string | null;
+--- a/browser/src/core/runtime.ts
++++ b/browser/src/core/runtime.ts
+@@ -16,2 +16,2 @@
+-    if (!/^(?:ovid_pubmed_converter\/[a-z_][a-z0-9_]*\.py|browser_bridge\.py)$/.test(file)) throw new Error('runtime_source_path_invalid');
+-    const expected = file === 'browser_bridge.py' ? manifest.bridgeSha256 : manifest.pythonSourceHashes[`src/${file}`];
++    if (!/^(?:ovid_pubmed_converter\/[a-z_][a-z0-9_]*\.py|browser_bridge\.py|mesh_snapshot_v1_YW_18092026\.py)$/.test(file)) throw new Error('runtime_source_path_invalid');
++    const expected = file === 'browser_bridge.py' ? manifest.bridgeSha256 : file === 'mesh_snapshot_v1_YW_18092026.py' ? manifest.snapshotAdapterSha256 : manifest.pythonSourceHashes[`src/${file}`];
+@@ -20 +20 @@
+-  if (Object.keys(source.files).length !== Object.keys(manifest.pythonSourceHashes).length + 1) throw new Error('runtime_module_missing');
++  if (Object.keys(source.files).length !== Object.keys(manifest.pythonSourceHashes).length + 2) throw new Error('runtime_module_missing');
+--- a/browser/src/converter.worker.ts
++++ b/browser/src/converter.worker.ts
+@@ -23,2 +23,2 @@
+-      const [manifestText, sourceText, cacheText] = await Promise.all([
+-        asset(prefix + 'manifest.json'), asset(prefix + 'python-sources.json'), asset(prefix + 'mesh-cache.json'),
++      const [manifestText, sourceText] = await Promise.all([
++        asset(prefix + 'manifest.json'), asset(prefix + 'python-sources.json'),
+@@ -26,0 +27,17 @@
++      let cacheText: string;
++      if (manifest.cacheCompression === 'gzip' && typeof DecompressionStream !== 'undefined') {
++        const response = await fetch(prefix + 'mesh-cache.json.gz', {credentials:'omit', cache:'no-cache'});
++        if (!response.ok) throw new Error('runtime_asset_unavailable');
++        const bytes = new Uint8Array(await response.arrayBuffer());
++        if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
++          const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))).map(x=>x.toString(16).padStart(2,'0')).join('');
++          if (hash !== manifest.cacheGzipSha256) throw new Error('runtime_compressed_cache_integrity_failed');
++          cacheText = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
++        } else {
++          // A host may already have applied Content-Encoding decoding.
++          // The decompressed content hash is always checked by createRuntime.
++          cacheText = new TextDecoder('utf-8', {fatal:true}).decode(bytes);
++        }
++      } else {
++        cacheText = await asset(prefix + 'mesh-cache.json');
++      }
+--- a/browser/scripts/prepare-assets.mjs
++++ b/browser/scripts/prepare-assets.mjs
+@@ -34,0 +35 @@
++sources['mesh_snapshot_v1_YW_18092026.py'] = canonical(await readFile(path.join(root, 'python/mesh_snapshot_v1_YW_18092026.py'), 'utf8'));
+@@ -39,9 +40,27 @@
+-const candidates = (await readdir(resources)).filter(x => /^mesh_resolution_cache_v20_v1_YW_.*\.json$/.test(x)).sort();
+-const selected = process.env.MESH_CACHE_PATH
+-  ? path.resolve(repo, process.env.MESH_CACHE_PATH)
+-  : path.join(resources, candidates.at(-1) || 'mesh_resolution_cache_v20_v1.json');
+-const cache = JSON.parse(await readFile(selected, 'utf8'));
