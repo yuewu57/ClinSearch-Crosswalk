@@ -1,0 +1,51 @@
+name: Build frozen MeSH 2026 snapshot
+
+on:
+  push:
+    branches: [feature/mesh-2026-snapshot-v1]
+    paths:
+      - 'scripts/build_mesh_snapshot_v1_YW_18092026.py'
+      - '.github/workflows/mesh-snapshot-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: mesh-snapshot-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Recover exact source bytes acquired for this snapshot
+        uses: actions/download-artifact@v4
+        with:
+          name: mesh-2026-official-xml-v1-YW-18092026
+          run-id: 35364589893
+          github-token: ${{ github.token }}
+          path: mesh-acquisition
+      - name: Generate descriptor-complete snapshot without modifying evaluation cache
+        run: |
+          python scripts/build_mesh_snapshot_v1_YW_18092026.py --source-dir mesh-acquisition --output-dir mesh-snapshot-output
+          git diff --exit-code -- resources/mesh_resolution_cache_v20_v1_YW_18092026.json src/
+      - name: Include exact implementation used to generate snapshot
+        if: always()
+        run: |
+          mkdir -p mesh-snapshot-output
+          git archive --format=tar.gz HEAD > mesh-snapshot-output/review-source-v1-YW-18092026.tar.gz
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mesh-2026-snapshot-v1-YW-18092026
+          path: mesh-snapshot-output/
+          retention-days: 30
