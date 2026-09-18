@@ -37,7 +37,8 @@
   "evaluation_provenance_cache": {
     "filename": "mesh_resolution_cache_v20_v1_YW_18092026.json",
     "records": 620,
-    "sha256": "57757954475335803962f7336f384966642f50766bf79e13e784126c26af4370",
+    "generation_source_byte_sha256": "57757954475335803962f7336f384966642f50766bf79e13e784126c26af4370",
+    "canonical_json_sha256": "34467e3deb46ec6a6709ad0123bf86f7d637aaec091e2a149437c03770b71caf",
     "semantic_metadata_differences": 0,
     "isolated_conversion_cases": 1240,
     "isolated_conversion_differences": 0
