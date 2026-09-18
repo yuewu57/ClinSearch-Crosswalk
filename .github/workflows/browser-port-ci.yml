@@ -38,6 +38,8 @@ jobs:
       - run: python scripts/export_browser_parity.py --check
       - name: Validate development starter-cache structure
         run: python scripts/validate_mesh_cache_release.py resources/mesh_resolution_cache_v20_v1.json --allow-empty
+      - name: Validate populated release-candidate MeSH cache
+        run: python scripts/validate_mesh_cache_release.py resources/mesh_resolution_cache_v20_v1_YW_18092026.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
