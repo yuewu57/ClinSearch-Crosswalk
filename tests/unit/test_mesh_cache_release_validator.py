@@ -91,3 +91,25 @@ def test_release_cache_validator_rejects_fixture_metadata(tmp_path):
 
     assert report["release_ready"] is False
     assert any("synthetic_fixture_metadata_detected" in error for error in report["errors"])
+
+
+def test_release_cache_validator_allows_empty_starter_for_development(tmp_path):
+    cache = tmp_path / "cache.json"
+    cache.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "mesh_year": None,
+                "generated_at_utc": None,
+                "source": "Empty v20 starter cache; exact NLM results may be added at runtime",
+                "records": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = MODULE.validate_cache(cache, require_nonempty=False)
+
+    assert report["release_ready"] is True
+    assert report["errors"] == []
+    assert "cache_is_empty" in report["warnings"]
