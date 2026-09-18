@@ -4,15 +4,14 @@ on:
     branches: [feature/browser-typescript-v1]
     paths: ['browser/package.json', '.github/workflows/browser-toolchain-bootstrap.yml']
 permissions:
-  contents: read
+  contents: write
 jobs:
   toolchain:
+    if: github.ref == 'refs/heads/feature/browser-typescript-v1'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -35,3 +34,11 @@ jobs:
             browser/node-version.txt
             browser/toolchain-versions.txt
           if-no-files-found: error
+      - name: Commit only the initial generated dependency lock
+        run: |
+          if git ls-files --error-unmatch browser/package-lock.json >/dev/null 2>&1; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- browser/package-lock.json
+          git commit -m 'build(browser): lock self-hosted runtime dependencies'
+          git push origin HEAD:refs/heads/feature/browser-typescript-v1
