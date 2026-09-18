@@ -8,8 +8,9 @@ test('real browser conversion with production CSP, correct numbering and no outb
   const requests: string[]=[];const errors:string[]=[];
   page.on('request',r=>requests.push(r.url()));
   page.on('pageerror',e=>errors.push(e.message));
-  const response=await page.goto('/');
-  expect(response?.headers()['content-security-policy']).toContain("'wasm-unsafe-eval'");
+  await page.goto('/');
+  const csp=await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content');
+  expect(csp).toContain("'wasm-unsafe-eval'");
   await convert(page,'1 asthma.tw.\n2 2022*.dt.\n3 1 and 2');
   await expect(page.locator('#query')).toHaveValue('asthma[tw]');
   await expect(page.locator('#numbered')).toHaveText('#1 asthma[tw]\n#3 #1\n');
