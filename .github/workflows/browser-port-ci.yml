@@ -73,7 +73,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
         working-directory: browser
       - run: npm run test:e2e
-        working_directory: browser
+        working-directory: browser
       - uses: actions/upload-artifact@v4
         if: always()
         with:
