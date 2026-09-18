@@ -9,6 +9,8 @@ on:
       - 'resources/**'
       - 'scripts/export_browser_parity.py'
       - 'scripts/validate_mesh_cache_release.py'
+      - 'scripts/build_frozen_mesh2026_browser_snapshot.py'
+      - 'scripts/validate_frozen_mesh2026_browser_snapshot.py'
       - 'tests/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
@@ -25,7 +27,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,7 +46,7 @@ jobs:
       - name: Install Python test dependencies
         run: python -m pip install -r requirements-dev.txt
 
-      - name: Validate frozen MeSH release cache
+      - name: Validate immutable 620-record evaluation cache
         run: python scripts/validate_mesh_cache_release.py resources/mesh_resolution_cache_v20_v1_YW_18092026.json
 
       - name: Run Python regression and conformance tests
@@ -56,6 +58,18 @@ jobs:
       - name: Verify native reference parity manifest
         run: python scripts/export_browser_parity.py --check
 
+      - name: Rebuild frozen MeSH 2026 browser snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_DIR="$RUNNER_TEMP/mesh2026-source"
+          OUTPUT_DIR="$RUNNER_TEMP/mesh2026-browser"
+          mkdir -p "$SOURCE_DIR" "$OUTPUT_DIR"
+          SNAPSHOT="$OUTPUT_DIR/mesh2026_exact_snapshot_v1_YW_18092026.json"
+          python scripts/build_frozen_mesh2026_browser_snapshot.py             --repo-root .             --source-dir "$SOURCE_DIR"             --output "$SNAPSHOT"
+          python scripts/validate_frozen_mesh2026_browser_snapshot.py             --repo-root .             --snapshot "$SNAPSHOT"
+          echo "MESH_CACHE_PATH=$SNAPSHOT" >> "$GITHUB_ENV"
+
       - name: Install browser dependencies
         run: npm ci --ignore-scripts
         working-directory: browser
@@ -64,11 +78,11 @@ jobs:
         run: npm audit --audit-level=high
         working-directory: browser
 
-      - name: Run browser parity tests
+      - name: Run browser parity tests with full frozen terminology
         run: npm test
         working-directory: browser
 
-      - name: Build static browser application
+      - name: Build static browser application with full frozen terminology
         run: npm run build
         working-directory: browser
 

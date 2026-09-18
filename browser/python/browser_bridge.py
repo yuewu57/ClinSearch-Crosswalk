@@ -1,14 +1,16 @@
 """Data-only bridge to the unchanged Python reference; native and WebAssembly.
 
 No source string is evaluated as Python. MeSH resolution is always cache-only.
-The deployment adapter adds explicit resource limits, not conversion rules.
+The terminology payload is parsed once during worker initialization and reused
+for subsequent conversions in that worker.
 """
 import base64
 import json
 from dataclasses import asdict, replace
 
+from mesh_snapshot_resolver_v1_YW_18092026 import resolver_from_payload
+
 from ovid_pubmed_converter.core import convert_strategy
-from ovid_pubmed_converter.engine import MeshResolver
 from ovid_pubmed_converter.outputs import audit_csv, converted_rtf, one_line_query, strategy_text
 from ovid_pubmed_converter.parser import parse_strategy_text
 from ovid_pubmed_converter.rtf import parse_rtf_bytes
@@ -17,6 +19,16 @@ MAX_BYTES = 2 * 1024 * 1024
 MAX_ROWS = 1000
 MAX_QUERY_CHARS = 2 * 1024 * 1024
 MAX_NESTING = 100
+
+_RESOLVER = None
+
+
+def initialize_cache_json(cache_json):
+    """Parse and install one immutable cache/snapshot for this worker."""
+    global _RESOLVER
+    payload = json.loads(cache_json)
+    _RESOLVER = resolver_from_payload(payload)
+    return True
 
 
 def _check_depth(text):
@@ -65,7 +77,10 @@ def _check_expanded_query_size(result):
         size(result.final_line_number, ())
 
 
-def _run(request, cache):
+def _run(request):
+    if _RESOLVER is None:
+        raise ValueError('browser_runtime_cache_not_initialized')
+
     mode = request.get('mode')
     if mode == 'paste':
         source = request.get('source')
@@ -86,19 +101,13 @@ def _run(request, cache):
         del data
     else:
         raise ValueError('browser_input_mode_invalid')
+
     if len(strategy.rows) > MAX_ROWS:
         raise ValueError('browser_row_limit_exceeded')
     for row in strategy.rows:
         _check_depth(row.source)
 
-    if not isinstance(cache, dict) or cache.get('schema_version') != 1:
-        raise ValueError('browser_cache_schema_invalid')
-    if not isinstance(cache.get('records'), dict):
-        raise TypeError('browser_cache_records_invalid')
-    resolver = MeshResolver(cache_path=None, mode='cache-only')
-    resolver.records = dict(cache['records'])
-    resolver.mesh_year = cache.get('mesh_year')
-    result = convert_strategy(strategy, mesh_resolver=resolver)
+    result = convert_strategy(strategy, mesh_resolver=_RESOLVER)
     input_warnings = tuple(strategy.metadata.get('input_warnings', ()) or ())
     if input_warnings:
         result = replace(
@@ -119,22 +128,34 @@ def _run(request, cache):
     }
 
 
-def run_request_json(request_json, cache_json):
+def run_request_json(request_json):
     """One request in, one JSON result out; no user data persists between calls."""
     try:
-        value = _run(json.loads(request_json), json.loads(cache_json))
+        value = _run(json.loads(request_json))
     except (TypeError, ValueError, UnicodeError, RecursionError, MemoryError) as exc:
-        # Do not echo potentially confidential source text in error messages.
         known = str(exc).split(':', 1)[0]
-        code = known if known.startswith(('browser_', 'rtf_', 'invalid_rtf_', 'one_line_')) else 'browser_input_processing_failed'
+        code = (
+            known
+            if known.startswith(('browser_', 'rtf_', 'invalid_rtf_', 'one_line_'))
+            else 'browser_input_processing_failed'
+        )
         value = {
             'result': {
-                'validation_status': 'manual_review_required', 'rows': [],
-                'final_line_number': None, 'final_query': None, 'warnings': [],
-                'audit_events': [], 'validation_errors': [code],
-                'removed_line_numbers': [], 'synthetic_rows': [],
+                'validation_status': 'manual_review_required',
+                'rows': [],
+                'final_line_number': None,
+                'final_query': None,
+                'warnings': [],
+                'audit_events': [],
+                'validation_errors': [code],
+                'removed_line_numbers': [],
+                'synthetic_rows': [],
             },
-            'strategyText': '', 'oneLineQuery': '', 'auditCsv': '',
-            'convertedRtf': '', 'inputWarnings': [], 'adapterError': code,
+            'strategyText': '',
+            'oneLineQuery': '',
+            'auditCsv': '',
+            'convertedRtf': '',
+            'inputWarnings': [],
+            'adapterError': code,
         }
     return json.dumps(value, ensure_ascii=True, sort_keys=True, separators=(',', ':'))

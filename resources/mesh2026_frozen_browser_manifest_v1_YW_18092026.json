@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "mesh_year": 2026,
+  "snapshot": {
+    "filename": "mesh2026_exact_snapshot_v1_YW_18092026.json",
+    "bytes": 12222418,
+    "sha256": "7ebdeba5e6c6d09b154e053e57777d746b51939a50bad8deac5b14bd07c7a6da",
+    "gzip_bytes": 2534175,
+    "gzip_sha256": "8ea3f55896f40b910fd4de0a0ba14e9fec90726da823ae7bd392e2665d545f01"
+  },
+  "sources": {
+    "desc2026.gz": {
+      "url": "https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/desc2026.gz",
+      "bytes": 16812612,
+      "sha256": "ccd4d0d33bebfd4c836a59e7dd0c635b1d4e20c4f5a6abc55e2eb0ba4c8716dd"
+    },
+    "supp2026.gz": {
+      "url": "https://nlmpubs.nlm.nih.gov/projects/mesh/MESH_FILES/xmlmesh/supp2026.gz",
+      "bytes": 47287269,
+      "sha256": "5d487dbb55807724465065f5c0945c630290a0a6decee14618f5380c574d87ab"
+    }
+  },
+  "counts": {
+    "descriptors": 31110,
+    "preferred_label_keys": 31110,
+    "term_label_keys": 267012,
+    "all_label_keys": 267012,
+    "pharmacological_action_targets": 567,
+    "supplementary_records_scanned_for_PA": 324046,
+    "descriptor_classes": {
+      "CheckTag": 2,
+      "GeographicalDescriptor": 402,
+      "PublicationType": 194,
+      "TopicalDescriptor": 30512
+    }
+  },
+  "evaluation_provenance_cache": {
+    "filename": "mesh_resolution_cache_v20_v1_YW_18092026.json",
+    "records": 620,
+    "generation_source_byte_sha256": "57757954475335803962f7336f384966642f50766bf79e13e784126c26af4370",
+    "canonical_json_sha256": "34467e3deb46ec6a6709ad0123bf86f7d637aaec091e2a149437c03770b71caf",
+    "semantic_metadata_differences": 0,
+    "isolated_conversion_cases": 1240,
+    "isolated_conversion_differences": 0
+  },
+  "reference": {
+    "reference_commit": "8ca2ca49984d13e466ae12332964f3131e49ee64",
+    "engine_sha256": "004ba1b5001cff625ccc1e5d703adf56b2312d7510370327e2514c6070b84348"
+  },
+  "scope": [
+    "All current MeSH 2026 descriptor names and exact Term strings across the four supported descriptor classes.",
+    "Supplementary concept records are scanned only for direct pharmacological-action target links; SCR names are not promoted to descriptor mappings.",
+    "No fuzzy matching, nearest-term substitution, qualifier-policy change, or automatic parsing of historical notes.",
+    "Ten previously reviewed project historical aliases remain separate from NLM exact Term evidence.",
+    "The 620-record evaluation cache remains immutable and is not retrospectively replaced."
+  ]
+}

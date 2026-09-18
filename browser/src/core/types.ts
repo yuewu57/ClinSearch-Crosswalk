@@ -21,7 +21,11 @@ export interface RuntimeManifest {
   schemaVersion: number; product: string; browserVersion: string;
   implementation: string; pyodideVersion: string; pythonReferenceCommit: string;
   pythonSourceHashes: Record<string, string>; pythonBundleSha256: string;
-  bridgeSha256: string; cacheSha256: string; cacheRecords: number;
+  bridgeSha256: string; snapshotAdapterSha256: string;
+  cacheSha256: string; cacheRecords: number; cacheLabelKeys: number;
+  cacheKind: 'evaluation-cache' | 'full-descriptor-snapshot';
+  cacheFile: string; evaluationCacheSha256: string;
+  evaluationCacheCanonicalSha256: string;
   meshYear: number | null; cacheSource: string | null; mode: 'cache-only';
   buildStatus: string;
   limits: {inputBytes: number; rows: number; nesting: number; conversionTimeoutSeconds: number};
