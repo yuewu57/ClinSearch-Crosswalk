@@ -1,4 +1,4 @@
-# ClinSearch-CrossWalk browser release candidate
+# ClinSearchBridge browser release candidate
 
 This branch provides a TypeScript interface and Web Worker around the **unchanged Python reference engine running locally through Pyodide/WebAssembly**. It is not an independent TypeScript rewrite. There is no conversion server and no live MeSH call.
 
