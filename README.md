@@ -1,16 +1,16 @@
-# ClinSearch-CrossWalk
+# ClinSearchBridge
 
 **Deterministic, recall-oriented Ovid MEDLINE → PubMed search-strategy translation with validation and line-level audit.**
 
-ClinSearch-CrossWalk implements the approved **v21** conversion semantics. The reference converter is Python. The release-candidate browser application runs that same Python reference engine locally in the browser through Pyodide/WebAssembly behind a TypeScript interface; it is **not** a separate TypeScript reimplementation and does not require a conversion server.
+ClinSearchBridge implements the approved **v21** conversion semantics. The reference converter is Python. The release-candidate browser application runs that same Python reference engine locally in the browser through Pyodide/WebAssembly behind a TypeScript interface; it is **not** a separate TypeScript reimplementation and does not require a conversion server.
 
 > **Release-candidate status.** The public GitHub Pages browser is deployed with a frozen MeSH 2026 exact-resolution snapshot (31,110 supported descriptors; 267,012 exact preferred/entry-term label keys). The 620-record terminology cache used for framework development/external benchmarking remains separate and unchanged as evaluation provenance. The browser is not yet declared a final research release; remaining gates include representative real-corpus acceptance, final release/licensing approval and archival metadata. See [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 
 ## Associated manuscript
 
-**ClinSearch-Crosswalk: a recall-oriented, auditable clinical search translation framework for Ovid MEDLINE-to-PubMed conversion**
+**ClinSearchBridge: a recall-oriented, auditable clinical search translation framework for Ovid MEDLINE-to-PubMed conversion**
 
-Danqi Zhuang¹ · Fang Qi² · Xiaoyue Xi³ · Chris Robertson¹˒⁴ · Martin Halvey⁵ · Yue Wu¹˒⁶
+Danqi Zhuang¹ · Fang Qi² · Xiaoyue Xi³ · Chris Robertson¹˒⁴ · Martin Halvey⁵ · Yue Wu¹˒⁶ (corresponding author)
 
 1. Department of Mathematics and Statistics, University of Strathclyde, Glasgow, UK
 2. Independent Researcher, Tianjin, China
@@ -73,7 +73,7 @@ Pure Ovid database-update rows using `.ed.`, `.dt.`, `.ed,dt.` or `.dt,ed.` are 
 
 ## Output and retrieval gate
 
-For a successful conversion, ClinSearch-CrossWalk returns:
+For a successful conversion, ClinSearchBridge returns:
 
 1. **One-line PubMed query** — recursively expands the validated final dependency closure and contains no local `#N` references.
 2. **Numbered PubMed strategy** — preserves row-level structure for audit and troubleshooting.
@@ -99,7 +99,7 @@ The frozen browser snapshot SHA-256 is `7ebdeba5e6c6d09b154e053e57777d746b51939a
 
 The deployed release-candidate application is available at:
 
-https://yuewu57.github.io/ClinSearch-Crosswalk/
+https://yuewu57.github.io/ClinSearchBridge/
 
 ## Browser release candidate
 
