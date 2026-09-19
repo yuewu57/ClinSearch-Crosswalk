@@ -99,7 +99,7 @@ The frozen browser snapshot SHA-256 is `7ebdeba5e6c6d09b154e053e57777d746b51939a
 
 The deployed release-candidate application is available at:
 
-https://yuewu57.github.io/ClinSearchBridge/
+https://clinsearchbridge.github.io/
 
 ## Browser release candidate
 
