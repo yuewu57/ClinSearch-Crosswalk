@@ -16,7 +16,7 @@ ROOT = Path(__file__).parents[2]
 
 def test_presentation_identity_and_attribution_are_preserved():
     assert BRAND_NAME == "Que²"
-    assert PRODUCT_NAME == "ClinSearch-CrossWalk: a Clinical Search Convertor"
+    assert PRODUCT_NAME == "ClinSearchBridge: a Clinical Search Convertor"
     assert FUNCTIONAL_SUBTITLE == "Ovid MEDLINE → PubMed"
     assert AFFILIATION_LABEL == "Institutional affiliation"
     assert INSTITUTIONAL_AFFILIATION == "University of Strathclyde Glasgow"
@@ -41,7 +41,7 @@ def test_public_app_does_not_load_or_render_logos():
 
 def test_public_browser_surface_uses_release_branding_without_legacy_logos():
     app = (ROOT / "browser/src/main.ts").read_text(encoding="utf-8")
-    assert "ClinSearch-CrossWalk" in app
+    assert "ClinSearchBridge" in app
     assert "Ovid MEDLINE" in app
     assert "PubMed" in app
     assert "<img" not in app
